@@ -2,9 +2,13 @@
 
 import asyncio
 import logging
+from pprint import pprint
 
 from aiosmtpd.controller import Controller
 from aiosmtpd.handlers import Sink
+
+import email
+from base64 import b64decode
 
 
 class MailHandler:
@@ -14,6 +18,11 @@ class MailHandler:
         print('Message data:\n')
         print(envelope.content.decode('utf8', errors='replace'))
         print('End of message')
+
+        # parse attachments
+        message = email.message_from_string(envelope.content.decode('utf8', errors='replace'))
+
+
         return '250 Message accepted for delivery'
 
 
