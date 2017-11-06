@@ -1,9 +1,27 @@
 version: '3.1'
 services:
+  smtpd:
+    build: ./smtpd
+    ports:
+      - "8025:8025"
   web:
     build: ./web
     ports:
       - "5000:5000"
   mongodb:
     image: "mvertes/alpine-mongo"
+    restart: always
+    ports:
+      - "27017:27017"
+    volumes:
+      - ./data/mongo:/data/db
+  postgres:
+    image: "postgres:9.2-alpine"
+    # restart: always
+    ports:
+      - "5432:5432"
+    volumes:
+      - ./data/postgres:/var/lib/postgresql/data
+    environment:
+      PGDATA: /var/lib/postgresql/data/pgdata
 

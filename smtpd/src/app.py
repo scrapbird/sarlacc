@@ -13,21 +13,22 @@ from base64 import b64decode
 
 class MailHandler:
     async def handle_DATA(self, server, session, envelope):
-        print('Message from %s' % envelope.mail_from)
-        print('Message for %s' % envelope.rcpt_tos)
-        print('Message data:\n')
-        print(envelope.content.decode('utf8', errors='replace'))
-        print('End of message')
-
-        # parse attachments
+        # parse message
         message = email.message_from_string(envelope.content.decode('utf8', errors='replace'))
+        i = 0
+        if message.is_multipart():
+            for part in message.walk():
+                print('PART {}'.format(i))
+                i += 1
+                print(part)
+                print('-' * 80)
 
 
         return '250 Message accepted for delivery'
 
 
 async def amain(loop):
-    cont = Controller(MailHandler(), hostname='::0', port=8025)
+    cont = Controller(MailHandler(), hostname='0.0.0.0', port=8025)
     cont.start()
 
 
