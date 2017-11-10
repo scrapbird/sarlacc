@@ -44,18 +44,28 @@ class MailHandler:
                 elif "Content-Type" in part and "text/plain" in part["Content-Type"]:
                     body = part.get_payload()
 
-            print('-' * 80)
-            print("Subject: {}".format(subject))
-            print("toAddressList: {}".format(toAddressList))
-            print("fromAddress: {}".format(fromAddress))
-            print("body: {}".format(body))
-            print("attachment: {}".format(attachment))
-            print("filename: {}".format(filename))
-            print("date send: {}".format(dateSent))
-
-            print('-' * 80)
+            asyncio.ensure_future(store_email(
+                subject = subject,
+                toAddressList = toAddressList,
+                fromAddress = fromAddress,
+                body = body,
+                attachment = attachment,
+                filename = filename,
+                dateSent = dateSent))
 
         return "250 Message accepted for delivery"
+
+
+async def store_email(subject, toAddressList, fromAddress, body, attachment, filename, dateSent):
+    print('-' * 80)
+    print("Subject: {}".format(subject))
+    print("toAddressList: {}".format(toAddressList))
+    print("fromAddress: {}".format(fromAddress))
+    print("body: {}".format(body))
+    print("attachment: {}".format(attachment))
+    print("filename: {}".format(filename))
+    print("dateSent: {}".format(dateSent))
+    print('-' * 80)
 
 
 async def amain(loop):
