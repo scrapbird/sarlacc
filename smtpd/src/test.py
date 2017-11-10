@@ -6,6 +6,7 @@ SMTP_USERNAME = 'myusername'
 SMTP_PASSWORD = '$uper$ecret'
 SMTP_FROM = 'sender@example.com'
 SMTP_TO = 'recipient@example.com'
+SMTP_SUBJECT = 'testing'
 
 TEXT_FILENAME = 'attachment.txt'
 MESSAGE = """This is the message
@@ -27,6 +28,7 @@ msg.attach(body)
 msg.attach(attachment)
 msg.add_header('From', SMTP_FROM)
 msg.add_header('To', SMTP_TO)
+msg.add_header('Subject', SMTP_SUBJECT)
 
 # Now send the message
 mailer = smtplib.SMTP(SMTP_SERVER, SMTP_PORT)
@@ -35,3 +37,4 @@ mailer = smtplib.SMTP(SMTP_SERVER, SMTP_PORT)
 # mailer.login(SMTP_USERNAME, SMTP_PASSWORD)
 mailer.sendmail(SMTP_FROM, [SMTP_TO], msg.as_string())
 mailer.close()
+print("done")
