@@ -3,14 +3,26 @@
 import asyncio
 import logging
 import re
+import hashlib
 from pprint import pprint
 from datetime import datetime
+from base64 import b64encode, b64decode
 
 from aiosmtpd.controller import Controller
 from aiosmtpd.handlers import Sink
 
 import email
 from base64 import b64decode
+
+from pymongo import MongoClient
+
+
+BIND_HOST = "0.0.0.0"
+BIND_PORT = 8025
+PSQL_HOST = "postgres"
+PSQL_PORT = 5432
+MNGO_HOST = "mongodb"
+MNGO_PORT = 2717
 
 
 class MailHandler:
@@ -57,6 +69,26 @@ class MailHandler:
 
 
 async def store_email(subject, toAddressList, fromAddress, body, attachment, filename, dateSent):
+   # """
+   #   store the following in postgres:
+
+   #   mailitem
+   #      id
+   #      dateSent
+   #      subjectId
+   #      bodyId
+   #      fileNameId
+   #      attachmentId # stored in mongodb
+   #   subject
+   #      id
+   #      content
+   #   body
+   #      id
+   #      content
+   #   filename
+   #      id
+   #      content
+   #  """
     print('-' * 80)
     print("Subject: {}".format(subject))
     print("toAddressList: {}".format(toAddressList))
@@ -67,9 +99,19 @@ async def store_email(subject, toAddressList, fromAddress, body, attachment, fil
     print("dateSent: {}".format(dateSent))
     print('-' * 80)
 
+    if attachment != None:
+        # store attachment in mongo under key of sha256 hash of data
+        mongoClient = MongoClient("mongodb://mongodb:27017")
+        sarlacc = mongoClient['sarlacc']
+        m = hashlib.sha256()
+        m.update(b64encode(attachment.encode('utf-8')))
+        k = m.hexdigest()
+        sarlacc["attachments"].insert_one(k, b64encode(attachment.encode('utf-8')))
+        print("Stored file")
+
 
 async def amain(loop):
-    cont = Controller(MailHandler(), hostname='0.0.0.0', port=8025)
+    cont = Controller(MailHandler(), hostname=BIND_HOST, port=BIND_PORT)
     cont.start()
 
 
