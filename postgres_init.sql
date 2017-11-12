@@ -1,18 +1,18 @@
 DROP TABLE attachment;
-DROP TABLE body;
 DROP TABLE mailitem;
+DROP TABLE body;
+
+CREATE TABLE body (
+	id SERIAL PRIMARY KEY,
+	sha256 text,
+	content text
+);
 
 CREATE TABLE mailitem (
 	id SERIAL PRIMARY KEY,
 	dateSent date,
-	subject text
-);
-
-CREATE TABLE body (
-	id SERIAL PRIMARY KEY,
-	mailId integer REFERENCES mailitem (id),
-	sha256 text,
-	content text
+	subject text,
+	bodyId integer REFERENCES body (id)
 );
 
 CREATE TABLE attachment (

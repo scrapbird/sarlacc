@@ -99,9 +99,22 @@ async def store_email(subject, toAddressList, fromAddress, body, attachment, fil
 
     with postgres:
         with postgres.cursor() as curs:
+            # check if body has been seen, if not store it
+            bodySHA256 = get_sha256(b64encode(body.encode('utf-8')))
+            curs.execute("SELECT * FROM body where sha256 = %s;", (bodySHA256,))
+            results = curs.fetchall()
+            if not results:
+                # insert this body
+                curs.execute("INSERT INTO body (sha256, content) values (%s, %s) returning *;",
+                        (bodySHA256, body,))
+                results = curs.fetchone()
+                print(results)
+            bodyId = results[0]
+            print("Body ID: {}".format(bodyId))
+
             # add a mailitem
-            curs.execute("INSERT INTO mailitem (dateSent, subject) values (%s, %s) returning *;",
-                    (dateSent, subject,))
+            curs.execute("INSERT INTO mailitem (dateSent, subject, bodyId) values (%s, %s, %s) returning *;",
+                    (dateSent, subject, bodyId,))
             mailitem = curs.fetchone()
 
             if attachment != None:
@@ -120,19 +133,6 @@ async def store_email(subject, toAddressList, fromAddress, body, attachment, fil
                         "sha256": attachmentSHA256,
                         "content": b64encode(attachment.encode('utf-8'))})
                     print("Stored file")
-
-            # check if body has been seen, if not store it
-            bodySHA256 = get_sha256(b64encode(body.encode('utf-8')))
-            curs.execute("SELECT * FROM body where sha256 = %s;", (bodySHA256,))
-            results = curs.fetchall()
-            if not results:
-                # insert this body
-                curs.execute("INSERT INTO body (sha256, mailId, content) values (%s, %s, %s) returning *;",
-                        (bodySHA256, mailitem[0], body,))
-                results = curs.fetchone()
-                print(results)
-            bodyId = results[0]
-            print("Body ID: {}".format(bodyId))
 
 
 async def amain(loop):
