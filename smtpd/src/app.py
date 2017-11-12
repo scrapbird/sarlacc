@@ -102,14 +102,13 @@ async def store_email(subject, toAddressList, fromAddress, body, attachment, fil
             # check if body has been seen, if not store it
             bodySHA256 = get_sha256(b64encode(body.encode('utf-8')))
             curs.execute("SELECT * FROM body where sha256 = %s;", (bodySHA256,))
-            results = curs.fetchall()
-            if not results:
+            bodyRecord = curs.fetchone()
+            if not bodyRecord:
                 # insert this body
                 curs.execute("INSERT INTO body (sha256, content) values (%s, %s) returning *;",
                         (bodySHA256, body,))
-                results = curs.fetchone()
-                print(results)
-            bodyId = results[0]
+                bodyRecord = curs.fetchone()
+            bodyId = bodyRecord[0]
             print("Body ID: {}".format(bodyId))
 
             # add a mailitem

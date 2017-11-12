@@ -1,7 +1,7 @@
 # Settings
 
 SMTP_SERVER = 'localhost'
-SMTP_PORT = 8025
+SMTP_PORT = 2500
 SMTP_USERNAME = 'myusername'
 SMTP_PASSWORD = '$uper$ecret'
 SMTP_FROM = 'sender@example.com'

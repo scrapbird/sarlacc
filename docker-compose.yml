@@ -19,7 +19,7 @@ services:
   smtpd:
     build: ./smtpd
     ports:
-      - "8025:8025"
+      - "2500:2500"
   web:
     build: ./web
     ports:
