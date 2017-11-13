@@ -135,10 +135,10 @@ async def store_email(subject, toAddressList, fromAddress, body, dateSent, attac
                     sarlacc = mongo['sarlacc']
 
                     print("Checking if attachment already in db")
-                    existing = sarlacc["attachments"].find_one({"sha256": attachmentSHA256})
+                    existing = sarlacc["samples"].find_one({"sha256": attachmentSHA256})
                     if not existing:
                         print("Storing attachment in db")
-                        sarlacc["attachments"].insert_one({
+                        sarlacc["samples"].insert_one({
                             "sha256": attachmentSHA256,
                             "content": b64encode(attachment["content"].encode("utf-8"))})
                         print("Stored file")
