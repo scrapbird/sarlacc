@@ -1,6 +1,10 @@
-DROP TABLE attachment;
-DROP TABLE mailitem;
-DROP TABLE body;
+\connect sarlacc
+
+DROP TABLE attachment CASCADE;
+DROP TABLE recipient CASCADE;
+DROP TABLE mailrecipient CASCADE;
+DROP TABLE mailitem CASCADE;
+DROP TABLE body CASCADE;
 
 CREATE TABLE body (
 	id SERIAL PRIMARY KEY,
@@ -10,15 +14,27 @@ CREATE TABLE body (
 
 CREATE TABLE mailitem (
 	id SERIAL PRIMARY KEY,
-	dateSent date,
+	datesent date,
 	subject text,
-	bodyId integer REFERENCES body (id)
+	fromaddress text,
+	bodyid integer REFERENCES body (id)
+);
+
+CREATE TABLE recipient (
+	id SERIAL PRIMARY KEY,
+	emailaddress text
+);
+
+CREATE TABLE mailrecipient (
+	id SERIAL PRIMARY KEY,
+	recipientid integer REFERENCES recipient (id),
+	mailid integer REFERENCES mailitem (id)
 );
 
 CREATE TABLE attachment (
 	id SERIAL PRIMARY KEY,
-	mailId integer REFERENCES mailitem (id),
+	mailid integer REFERENCES mailitem (id),
 	sha256 text,
-	fileName text
+	filename text
 );
 
