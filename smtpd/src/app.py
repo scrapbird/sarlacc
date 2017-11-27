@@ -2,11 +2,10 @@
 
 import asyncio
 import logging
-from datetime import datetime
 from configparser import ConfigParser
 
 from aiosmtpd.controller import Controller
-from aiosmtpd.handlers import Sink
+#from aiosmtpd.handlers import Sink
 
 import storage
 from mailer import MailHandler
