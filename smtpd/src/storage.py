@@ -33,7 +33,8 @@ class StorageControl:
                 postgres = psycopg2.connect(
                         host=host,
                         user=user,
-                        database=database)
+                        database=database,
+                        password=password)
                 return postgres
             except:
                 print("[!] Failed to connect to postgres")
