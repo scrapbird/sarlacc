@@ -1,5 +1,6 @@
 import email
 import re
+import asyncio
 from datetime import datetime
 
 
@@ -60,5 +61,7 @@ class MailHandler:
 
         except:
             print("crashed when parsing email.. lol")
+            e = sys.exc_info()[0]
+            print(e)
 
         return "250 Message accepted for delivery"
