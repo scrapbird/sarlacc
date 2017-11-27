@@ -10,4 +10,4 @@ port = 27017
 host = localhost
 database = sarlacc
 user = sarlacc
-password = Bi980Ls5YOD7JB0dsSD4
+password = strongpasswordhere
