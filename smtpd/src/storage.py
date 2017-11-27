@@ -13,7 +13,8 @@ class StorageControl:
         self.postgres = self.try_connect_postgres(
                 host=config['postgres']['host'],
                 database=config['postgres']['database'],
-                user=config['postgres']['user'])
+                user=config['postgres']['user'],
+                password=config['postgres']['password'])
 
         self.mongo = MongoClient("mongodb://{}:{}".format(
             config['mongodb']['host'],
@@ -25,7 +26,7 @@ class StorageControl:
         m.update(data)
         return m.hexdigest()
 
-    def try_connect_postgres(self, host, user, database):
+    def try_connect_postgres(self, host, user, password, database):
         while True:
             print("[-] Trying to connect to postgres... {}@{}/{}".format(user, host, database))
             try:

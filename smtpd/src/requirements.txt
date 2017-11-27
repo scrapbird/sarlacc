@@ -2,3 +2,4 @@ asyncio
 aiosmtpd
 pymongo
 psycopg2
+ConfigParser

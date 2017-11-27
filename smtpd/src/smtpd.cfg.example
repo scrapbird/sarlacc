@@ -7,6 +7,7 @@ host = mongodb
 port = 27017
 
 [postgres]
-host = postgres
+host = localhost
 database = sarlacc
-user = postgres
+user = sarlacc
+password = Bi980Ls5YOD7JB0dsSD4
