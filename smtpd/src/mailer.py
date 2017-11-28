@@ -2,7 +2,8 @@ import email
 import re
 import asyncio
 from datetime import datetime
-from aiosmtpd.controller import Controller, Server
+from aiosmtpd.controller import Controller
+from aiosmtpd.smtp import SMTP as Server
 
 class CustomIdentController(Controller):
     def factory(self):
