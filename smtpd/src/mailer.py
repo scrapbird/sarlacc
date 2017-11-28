@@ -2,19 +2,19 @@ import email
 import re
 import asyncio
 from datetime import datetime
-from aiosmtpd.controller import Controller
+from aiosmtpd.controller import Controller, Server
 
 class CustomIdentController(Controller):
     def factory(self):
         server = Server(self.handler)
         server.__ident__ = "Xtra mail"
+        server.hostname = "Xtra"
         return server
 
 
 class MailHandler:
     def __init__(self, store):
         self.store = store
-        self.__ident__ = "Xtra mail"
 
 
     async def handle_DATA(self, server, session, envelope):

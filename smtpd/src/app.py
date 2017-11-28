@@ -4,16 +4,13 @@ import asyncio
 import logging
 from configparser import ConfigParser
 
-from aiosmtpd.controller import Controller
-#from aiosmtpd.handlers import Sink
-
 import storage
 from mailer import MailHandler, CustomIdentController
 
 
 async def amain(loop, host, port, store):
     print("[-] Starting smtpd on {}:{}".format(host, port))
-    cont = CustomIdentController(Controller(MailHandler(store), hostname=host, port=port))
+    cont = CustomIdentController(MailHandler(store), hostname=host, port=port)
     cont.start()
 
 
