@@ -7,6 +7,7 @@ from datetime import datetime
 class MailHandler:
     def __init__(self, store):
         self.store = store
+        self.__ident__ = "Xtra mail"
 
 
     async def handle_DATA(self, server, session, envelope):
