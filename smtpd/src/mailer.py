@@ -3,6 +3,12 @@ import re
 import asyncio
 from datetime import datetime
 
+class CustomIdentController(Controller):
+    def factory(self):
+        server = Server(self.handler)
+        server.__ident__ = "Xtra mail"
+        return server
+
 
 class MailHandler:
     def __init__(self, store):

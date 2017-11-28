@@ -8,12 +8,12 @@ from aiosmtpd.controller import Controller
 #from aiosmtpd.handlers import Sink
 
 import storage
-from mailer import MailHandler
+from mailer import MailHandler, CustomIdentController
 
 
 async def amain(loop, host, port, store):
     print("[-] Starting smtpd on {}:{}".format(host, port))
-    cont = Controller(MailHandler(store), hostname=host, port=port)
+    cont = CustomIdentController(Controller(MailHandler(store), hostname=host, port=port))
     cont.start()
 
 
