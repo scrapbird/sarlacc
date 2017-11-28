@@ -2,6 +2,7 @@ import email
 import re
 import asyncio
 from datetime import datetime
+from aiosmtpd.controller import Controller
 
 class CustomIdentController(Controller):
     def factory(self):
