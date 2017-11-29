@@ -34,8 +34,6 @@ for (dateSent, fromAddress, toAddressList, subject, body) in cursor:
 
     body = b64decode(body)
 
-    # TODO Get attachments
-
     store.store_email(subject, toAddressList, fromAddress, body, dateSent, [])
 
 mysql_cursor.close()
