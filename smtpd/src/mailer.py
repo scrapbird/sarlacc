@@ -8,8 +8,8 @@ from aiosmtpd.smtp import SMTP as Server
 class CustomIdentController(Controller):
     def factory(self):
         server = Server(self.handler)
-        server.__ident__ = "to MailSlurper!"
-        server.hostname = "Welcome"
+        server.hostname = "mx.google.com"
+        server.__ident__ = "ESMTP m66si1320047qki.162 - gsmtp"
         return server
 
 
