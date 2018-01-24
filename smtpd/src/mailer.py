@@ -6,10 +6,15 @@ from aiosmtpd.controller import Controller
 from aiosmtpd.smtp import SMTP as Server
 
 class CustomIdentController(Controller):
+    def __init__(self, ident_hostname, ident, **kw):
+        self.ident_hostname = ident_hostname
+        self.ident = ident
+        super(Controller, self).__init__(kw)
+
     def factory(self):
         server = Server(self.handler)
-        server.hostname = "mx.google.com"
-        server.__ident__ = "ESMTP m66si1320047qki.162 - gsmtp"
+        server.hostname = self.ident_hostname
+        server.__ident__ = self.ident
         return server
 
 

@@ -8,9 +8,14 @@ import storage
 from mailer import MailHandler, CustomIdentController
 
 
-async def amain(loop, host, port, store):
+async def amain(loop, host, port, store, config):
     print("[-] Starting smtpd on {}:{}".format(host, port))
-    cont = CustomIdentController(MailHandler(store), hostname=host, port=port)
+    cont = CustomIdentController(
+            #MailHandler(store),
+            ident_hostname=config["smtpd"]["hostname"],
+            ident=config["smtpd"]["ident"],
+            hostname=host,
+            port=port)
     cont.start()
 
 
@@ -27,7 +32,8 @@ if __name__ == "__main__":
     loop.create_task(amain(loop=loop,
         host=config["smtpd"]["host"],
         port=config["smtpd"]["port"],
-        store=store))
+        store=store,
+        config=config))
     try:
         loop.run_forever()
     except KeyboardInterrupt:

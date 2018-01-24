@@ -1,5 +1,7 @@
 \connect sarlacc
 
+CREATE ROLE "user";
+
 DROP TABLE attachment CASCADE;
 DROP TABLE recipient CASCADE;
 DROP TABLE mailrecipient CASCADE;
