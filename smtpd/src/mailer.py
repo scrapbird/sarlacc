@@ -6,10 +6,10 @@ from aiosmtpd.controller import Controller
 from aiosmtpd.smtp import SMTP as Server
 
 class CustomIdentController(Controller):
-    def __init__(self, ident_hostname, ident, **kw):
+    def __init__(self, handler, ident_hostname, ident, **kwargs):
         self.ident_hostname = ident_hostname
         self.ident = ident
-        super(Controller, self).__init__(kw)
+        super(CustomIdentController, self).__init__(handler, **kwargs)
 
     def factory(self):
         server = Server(self.handler)
@@ -32,7 +32,7 @@ class MailHandler:
         filename = None
         dateSent = datetime.now()
 
-        # parse message
+        # Parse message
         try:
             message = email.message_from_string(envelope.content.decode("utf8", errors="replace"))
             subject = message["subject"]

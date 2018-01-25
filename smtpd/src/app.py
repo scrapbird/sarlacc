@@ -11,7 +11,7 @@ from mailer import MailHandler, CustomIdentController
 async def amain(loop, host, port, store, config):
     print("[-] Starting smtpd on {}:{}".format(host, port))
     cont = CustomIdentController(
-            #MailHandler(store),
+            MailHandler(store),
             ident_hostname=config["smtpd"]["hostname"],
             ident=config["smtpd"]["ident"],
             hostname=host,
