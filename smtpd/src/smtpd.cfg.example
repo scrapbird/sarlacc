@@ -11,3 +11,6 @@ host = localhost
 database = sarlacc
 user = sarlacc
 password = strongpasswordhere
+
+[logging]
+log_level = INFO
