@@ -19,8 +19,9 @@ class CustomIdentController(Controller):
 
 
 class MailHandler:
-    def __init__(self, store):
+    def __init__(self, store, plugin_manager):
         self.store = store
+        self.plugin_manager = plugin_manager
 
 
     async def handle_DATA(self, server, session, envelope):

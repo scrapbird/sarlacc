@@ -1,16 +1,15 @@
 #!/usr/bin/env python3
 
-import storage
+import os, sys
+sys.path.append(os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
 
+import storage
 import mysql.connector
 import psycopg2
 import re
 from base64 import b64encode, b64decode
 from configparser import ConfigParser
-import sys
 import asyncio
-
-import storage
 
 
 def cleanup_address(addr):

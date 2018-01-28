@@ -6,12 +6,17 @@ from configparser import ConfigParser
 
 import storage
 from mailer import MailHandler, CustomIdentController
+from plugin import PluginManager
 
 
 async def amain(loop, host, port, store, config):
+    plugin_manager = PluginManager()
+    plugin_manager.load_plugins("plugins")
+    plugin_manager.run_plugins()
+
     print("[-] Starting smtpd on {}:{}".format(host, port))
     cont = CustomIdentController(
-            MailHandler(store),
+            MailHandler(store, plugin_manager),
             ident_hostname=config["smtpd"]["hostname"],
             ident=config["smtpd"]["ident"],
             hostname=host,

@@ -13,15 +13,17 @@ MESSAGE = """This is the message
 to be sent to the client.
 """
 
-# Now construct the message
+import os, sys
 import smtplib, email
 from email import encoders
-import os
 
+TEXT_FILEPATH = os.path.dirname(os.path.abspath(__file__)) + "/" + TEXT_FILENAME
+
+# Now construct the message
 msg = email.MIMEMultipart.MIMEMultipart()
 body = email.MIMEText.MIMEText(MESSAGE)
 attachment = email.MIMEBase.MIMEBase('text', 'plain')
-attachment.set_payload(open(TEXT_FILENAME).read())
+attachment.set_payload(open(TEXT_FILEPATH).read())
 attachment.add_header('Content-Disposition', 'attachment', filename=os.path.basename(TEXT_FILENAME))
 encoders.encode_base64(attachment)
 msg.attach(attachment)
