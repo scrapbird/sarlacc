@@ -6,7 +6,7 @@ from configparser import ConfigParser
 
 import storage
 from mailer import MailHandler, CustomIdentController
-from plugin import PluginManager
+from plugin_manager import PluginManager
 
 
 logger = logging.getLogger()
