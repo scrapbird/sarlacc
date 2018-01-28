@@ -56,6 +56,8 @@ class MailHandler:
                                 "fileName": fileName})
                     elif "Content-Type" in part and "text/plain" in part["Content-Type"]:
                         body = part.get_payload()
+                    elif "Content-Type" in part and "text/html" in part["Content-Type"]:
+                        body = part.get_payload()
             else:
                 # This is gross
                 if "Content-Disposition" in message and "attachment;" in message["Content-Disposition"]:
@@ -69,6 +71,8 @@ class MailHandler:
                             "content": content,
                             "fileName": fileName})
                 elif "Content-Type" in message and "text/plain" in message["Content-Type"]:
+                    body = message.get_payload()
+                elif "Content-Type" in message and "text/html" in message["Content-Type"]:
                     body = message.get_payload()
 
             asyncio.ensure_future(self.store.store_email(
