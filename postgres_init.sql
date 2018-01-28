@@ -16,7 +16,7 @@ CREATE TABLE body (
 
 CREATE TABLE mailitem (
 	id SERIAL PRIMARY KEY,
-	datesent date,
+	datesent timestamp,
 	subject text,
 	fromaddress text,
 	bodyid integer REFERENCES body (id)
