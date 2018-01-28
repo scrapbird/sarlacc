@@ -1,9 +1,14 @@
 import email
 import re
 import asyncio
+import logging
 from datetime import datetime
 from aiosmtpd.controller import Controller
 from aiosmtpd.smtp import SMTP as Server
+
+
+logger = logging.getLogger()
+
 
 class CustomIdentController(Controller):
     def __init__(self, handler, ident_hostname, ident, **kwargs):
@@ -75,8 +80,8 @@ class MailHandler:
                 dateSent = dateSent))
 
         except:
-            print("crashed when parsing email.. lol")
+            logger.error("Failed to parse mail")
             e = sys.exc_info()[0]
-            print(e)
+            logger.error(e)
 
         return "250 Message accepted for delivery"

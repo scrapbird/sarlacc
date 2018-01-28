@@ -9,12 +9,15 @@ from mailer import MailHandler, CustomIdentController
 from plugin import PluginManager
 
 
+logger = logging.getLogger()
+
+
 async def amain(loop, host, port, store, config):
     plugin_manager = PluginManager()
     plugin_manager.load_plugins("plugins")
     plugin_manager.run_plugins()
 
-    print("[-] Starting smtpd on {}:{}".format(host, port))
+    logger.info("Starting smtpd on {}:{}".format(host, port))
     cont = CustomIdentController(
             MailHandler(store, plugin_manager),
             ident_hostname=config["smtpd"]["hostname"],
@@ -25,6 +28,10 @@ async def amain(loop, host, port, store, config):
 
 
 if __name__ == "__main__":
+    logging.basicConfig(level=logging.INFO,
+            format='%(levelname)s: %(asctime)s %(message)s',
+            datefmt='%m/%d/%Y %I:%M:%S %p')
+
     # Read config
     config = ConfigParser()
     config.read("./smtpd.cfg")
@@ -32,7 +39,6 @@ if __name__ == "__main__":
     # init storage handlers
     store = storage.StorageControl(config)
 
-    logging.basicConfig(level=logging.DEBUG)
     loop = asyncio.get_event_loop()
     loop.create_task(amain(loop=loop,
         host=config["smtpd"]["host"],
