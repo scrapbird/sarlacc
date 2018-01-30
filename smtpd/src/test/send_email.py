@@ -13,7 +13,8 @@ MESSAGE = """This is the message
 to be sent to the client.
 """
 
-import os, sys
+import os
+import sys
 import smtplib, email
 from email import encoders
 

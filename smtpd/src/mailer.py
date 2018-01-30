@@ -10,11 +10,21 @@ from aiosmtpd.smtp import SMTP as Server
 logger = logging.getLogger()
 
 
+async def create_mailer(handler, loop, ident_hostname, ident, **kwargs):
+    mailer = Mailer(handler, loop, ident_hostname, ident, **kwargs)
+    await mailer._init()
+    return mailer
+
+
 class CustomIdentController(Controller):
-    def __init__(self, handler, ident_hostname, ident, **kwargs):
+    def __init__(self, handler, loop, ident_hostname, ident, **kwargs):
+        self.loop = loop
         self.ident_hostname = ident_hostname
         self.ident = ident
-        super(CustomIdentController, self).__init__(handler, **kwargs)
+        super(CustomIdentController, self).__init__(handler, loop=loop, **kwargs)
+
+    async def _init():
+        pass
 
     def factory(self):
         server = Server(self.handler)

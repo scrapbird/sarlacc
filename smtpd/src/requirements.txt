@@ -3,3 +3,4 @@ aiosmtpd
 pymongo
 psycopg2
 ConfigParser
+aiopg
