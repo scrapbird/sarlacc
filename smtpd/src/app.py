@@ -32,7 +32,6 @@ async def amain(loop, host, port, config):
         cont.start()
     except RuntimeError as e:
         logger.debug("Found an error!")
-        logger.debug(e.strerror)
 
 
 def main():
