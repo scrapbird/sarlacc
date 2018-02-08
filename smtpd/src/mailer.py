@@ -14,7 +14,6 @@ logger = logging.getLogger()
 
 async def create_mailer(handler, loop, ident_hostname, ident, **kwargs):
     mailer = Mailer(handler, loop, ident_hostname, ident, **kwargs)
-    await mailer._init()
     return mailer
 
 
@@ -24,9 +23,6 @@ class CustomIdentController(Controller):
         self.ident_hostname = ident_hostname
         self.ident = ident
         super(CustomIdentController, self).__init__(handler, loop=loop, **kwargs)
-
-    async def _init():
-        pass
 
     def factory(self):
         server = Server(self.handler)
