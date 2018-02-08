@@ -1,38 +1,16 @@
 #!/usr/bin/env python3
 
 import asyncio
+import threading
+import sys
 import logging
 from configparser import ConfigParser
 
-import storage
 from mailer import MailHandler, CustomIdentController
 from plugin_manager import PluginManager
 
 
 logger = logging.getLogger()
-
-async def amain(loop, host, port, config):
-    # Init storage handlers
-    store = await storage.create_storage(config, loop)
-
-    # Init plugin manager
-    plugin_manager = PluginManager()
-    plugin_manager.load_plugins("plugins")
-    plugin_manager.run_plugins()
-
-    logger.info("Starting smtpd on {}:{}".format(host, port))
-    try:
-        cont = CustomIdentController(
-                MailHandler(store, plugin_manager),
-                loop=loop,
-                ident_hostname=config["smtpd"]["hostname"],
-                ident=config["smtpd"]["ident"],
-                hostname=host,
-                port=port)
-        cont.start()
-    except RuntimeError as e:
-        logger.debug("Found an error!")
-
 
 def main():
     # Read config
@@ -45,14 +23,27 @@ def main():
             datefmt='%m/%d/%Y %I:%M:%S %p')
 
     loop = asyncio.get_event_loop()
-    loop.create_task(amain(loop=loop,
-        host=config["smtpd"]["host"],
-        port=config["smtpd"]["port"],
-        config=config))
-    try:
-        loop.run_forever()
-    except KeyboardInterrupt:
-        pass
+
+    # Init plugin manager
+    plugin_manager = PluginManager()
+    plugin_manager.load_plugins("plugins")
+    plugin_manager.run_plugins()
+
+    logger.info("Starting smtpd on {}:{}".format(config["smtpd"]["host"], config["smtpd"]["port"]))
+    cont = CustomIdentController(
+            MailHandler(loop, config, plugin_manager),
+            loop=loop,
+            ident_hostname=config["smtpd"]["hostname"],
+            ident=config["smtpd"]["ident"],
+            hostname=config["smtpd"]["host"],
+            port=config["smtpd"]["port"])
+    cont.start()
+
+    # Ugly but whatever, wait until the controller thread finishes (wtf why do they start a thread)
+    threads = threading.enumerate()
+    for thread in threads:
+        if not threading.current_thread() == thread:
+            thread.join()
 
 
 if __name__ == "__main__":

@@ -2,9 +2,11 @@ import email
 import re
 import asyncio
 import logging
+import functools
 from datetime import datetime
 from aiosmtpd.controller import Controller
 from aiosmtpd.smtp import SMTP as Server
+import storage
 
 
 logger = logging.getLogger()
@@ -34,9 +36,16 @@ class CustomIdentController(Controller):
 
 
 class MailHandler:
-    def __init__(self, store, plugin_manager):
-        self.store = store
+    def __init__(self, loop, config, plugin_manager):
+        self.loop = loop
+        self.config = config
         self.plugin_manager = plugin_manager
+        loop.create_task(self.init_store())
+
+
+    async def init_store(self):
+        # Init storage handlers
+        self.store = await storage.create_storage(self.config, self.loop)
 
 
     async def handle_DATA(self, server, session, envelope):
