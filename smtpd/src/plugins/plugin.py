@@ -3,7 +3,7 @@ class SarlaccPlugin:
         self.logger = logger
 
     def run(self):
-        self.logger.info("Test")
+        pass
 
     def stop(self):
         pass
