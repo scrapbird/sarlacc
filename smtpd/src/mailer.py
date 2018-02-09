@@ -46,12 +46,12 @@ class MailHandler:
 
     async def handle_DATA(self, server, session, envelope):
         subject = ""
-        toAddressList = envelope.rcpt_tos
-        fromAddress = envelope.mail_from
+        to_address_list = envelope.rcpt_tos
+        from_address = envelope.mail_from
         body = None
         attachments = []
         filename = None
-        dateSent = datetime.now()
+        date_sent = datetime.now()
 
         # Parse message
         try:
@@ -92,11 +92,11 @@ class MailHandler:
 
             asyncio.ensure_future(self.store.store_email(
                 subject = subject,
-                toAddressList = toAddressList,
-                fromAddress = fromAddress,
+                to_address_list = to_address_list,
+                from_address = from_address,
                 body = body,
                 attachments = attachments,
-                dateSent = dateSent))
+                date_sent = date_sent))
 
         except:
             logger.error("Failed to parse mail")

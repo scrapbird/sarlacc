@@ -59,14 +59,14 @@ class StorageControl:
                 time.sleep(5)
 
 
-    async def store_email(self, subject, toAddressList, fromAddress, body, dateSent, attachments):
+    async def store_email(self, subject, to_address_list, from_address, body, date_sent, attachments):
         logger.debug("-" * 80)
         logger.debug("Subject: {}".format(subject))
-        logger.debug("toAddressList: {}".format(toAddressList))
-        logger.debug("fromAddress: {}".format(fromAddress))
+        logger.debug("to_address_list: {}".format(to_address_list))
+        logger.debug("from_address: {}".format(from_address))
         logger.debug("body: {}".format(body))
         logger.debug("attachments: {}".format(attachments))
-        logger.debug("dateSent: {}".format(dateSent))
+        logger.debug("date_sent: {}".format(date_sent))
         logger.debug("-" * 80)
 
         # async with self.postgres.cursor() as curs:
@@ -98,15 +98,15 @@ class StorageControl:
 
         # add a mailitem
         await curs.execute("INSERT INTO mailitem (datesent, subject, fromaddress, bodyid) values (%s, %s, %s, %s) returning *;",
-                (dateSent, subject, fromAddress, bodyId,))
+                (date_sent, subject, from_address, bodyId,))
         mailitem = await curs.fetchone()
 
         # inform plugins
-        await self.plugin_manager.emit_new_mail_item(mailitem[0], subject, toAddressList, fromAddress, body, dateSent, attachments)
+        await self.plugin_manager.emit_new_mail_item(mailitem[0], subject, to_address_list, from_address, body, date_sent, attachments)
 
         # add recipients
         recipientList = []
-        for recipient in toAddressList:
+        for recipient in to_address_list:
             # insert if not existing already, otherwise return existing record
             await curs.execute('''
                     WITH s AS (
