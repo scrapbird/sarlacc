@@ -35,13 +35,13 @@ class MailHandler:
     def __init__(self, loop, config, plugin_manager):
         self.loop = loop
         self.config = config
-        self.plugin_manager = plugin_manager
+        self.plugin_manager = plugin_manager # not using yet but probably will at some point
         loop.create_task(self.init_store())
 
 
     async def init_store(self):
         # Init storage handlers
-        self.store = await storage.create_storage(self.config, self.loop)
+        self.store = await storage.create_storage(self.config, self.plugin_manager, self.loop)
 
 
     async def handle_DATA(self, server, session, envelope):

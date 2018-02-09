@@ -25,7 +25,7 @@ def main():
     loop = asyncio.get_event_loop()
 
     # Init plugin manager
-    plugin_manager = PluginManager()
+    plugin_manager = PluginManager(loop)
     plugin_manager.load_plugins("plugins")
     plugin_manager.run_plugins()
 

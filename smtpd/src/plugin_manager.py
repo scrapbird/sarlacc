@@ -2,13 +2,15 @@ import os
 import logging
 import traceback
 from importlib import import_module
+from enum import Enum
 
 
 logger = logging.getLogger()
 
 
 class PluginManager():
-    def __init__(self):
+    def __init__(self, loop):
+        self.loop = loop
         self.plugins = []
 
 
@@ -28,4 +30,19 @@ class PluginManager():
         for plugin in self.plugins:
             plugin.run()
             plugin.stop()
+
+
+    async def emit_new_email_address(self, *args, **kwargs):
+        for plugin in self.plugins:
+            self.loop.create_task(plugin.new_email_address(*args, **kwargs))
+
+
+    async def emit_new_attachment(self, *args, **kwargs):
+        for plugin in self.plugins:
+            self.loop.create_task(plugin.new_attachment(*args, **kwargs))
+
+
+    async def emit_new_mail_item(self, *args, **kwargs):
+        for plugin in self.plugins:
+            self.loop.create_task(plugin.new_mail_item(*args, **kwargs))
 

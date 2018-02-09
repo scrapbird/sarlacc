@@ -10,15 +10,16 @@ import logging
 logger = logging.getLogger()
 
 
-async def create_storage(config, loop):
-    storage = StorageControl(config, loop)
+async def create_storage(config, plugin_manager, loop):
+    storage = StorageControl(config, plugin_manager, loop)
     await storage._init()
     return storage
 
 
 class StorageControl:
-    def __init__(self, config, loop):
+    def __init__(self, config, plugin_manager, loop):
         self.config = config
+        self.plugin_manager = plugin_manager
         self.loop = loop
 
         self.mongo = MongoClient("mongodb://{}:{}".format(
@@ -100,6 +101,9 @@ class StorageControl:
                 (dateSent, subject, fromAddress, bodyId,))
         mailitem = await curs.fetchone()
 
+        # inform plugins
+        await self.plugin_manager.emit_new_mail_item(mailitem[0], subject, toAddressList, fromAddress, body, dateSent, attachments)
+
         # add recipients
         recipientList = []
         for recipient in toAddressList:
@@ -128,6 +132,13 @@ class StorageControl:
             # link this recipient to the mailitem
             await curs.execute("INSERT INTO mailrecipient (recipientid, mailid) values (%s, %s);", (recipientRecord[0], mailitem[0]))
 
+            # check if this is a new email address in the recipient list and if so, inform registered plugins
+            if recipient is not recipientRecord[1]:
+                # new email address
+                await self.plugin_manager.emit_new_email_address(
+                        _id=recipientRecord[0],
+                        email_address=recipientRecord[1])
+
 
         if attachments != None:
             for attachment in attachments:
@@ -135,15 +146,24 @@ class StorageControl:
                 await curs.execute("INSERT INTO attachment (sha256, mailid, filename) values (%s, %s, %s) returning *;",
                         (attachmentSHA256, mailitem[0], attachment['fileName'],))
 
+                attachmentRecord = await curs.fetchone()
+
                 # check if attachment has been seen, if not store it in mongodb
                 sarlacc = self.mongo['sarlacc']
 
                 logger.info("Checking if attachment already in db")
                 existing = sarlacc["samples"].find_one({"sha256": attachmentSHA256})
                 if not existing:
+                    content = b64encode(attachment["content"].encode("utf-8"))
                     logger.info("Storing attachment in db")
                     sarlacc["samples"].insert_one({
                         "sha256": attachmentSHA256,
-                        "content": b64encode(attachment["content"].encode("utf-8"))})
+                        "content": content})
                     logger.info("Stored file")
+
+                    # inform plugins of new attachment
+                    await self.plugin_manager.emit_new_attachment(
+                            _id=attachmentRecord[0],
+                            sha256=attachmentSHA256,
+                            content=content)
 
