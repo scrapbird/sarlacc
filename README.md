@@ -34,9 +34,22 @@ You can use the `postgres/postgres_init.sql` script to intitialize the database 
 psql -h localhost -U postgres < postgres/postgres_init.sql
 ```
 
-
-
 If you want to use different credentials (you should) then modify the `postgres/postgres_init.sql` and the config file for the smtp server appropriately.
+
+cd into the `smtpd/src` directory:
+```
+cd smtpd/src
+```
+
+Install the dependencies:
+```
+pip install -r requirements.txt
+```
+
+Start the server:
+```
+app.py
+```
 
 The server will then be listening for SMTP connections on port `2500`.
 

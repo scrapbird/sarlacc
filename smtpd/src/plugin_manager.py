@@ -15,7 +15,7 @@ class PluginManager():
 
 
     def load_plugins(self, directory):
-        for name in os.listdir(directory):
+        for name in os.listdir(os.path.dirname(os.path.abspath(__file__)) + "/" + directory):
             if name.endswith(".py") and not name == "plugin.py":
                 module_name = name[:-3]
                 try:

@@ -1,5 +1,6 @@
 #!/usr/bin/env python3
 
+import os
 import asyncio
 import threading
 import sys
@@ -16,7 +17,7 @@ logger = logging.getLogger()
 def main():
     # Read config
     config = ConfigParser()
-    config.readfp(open("./smtpd.cfg.default"))
+    config.readfp(open(os.path.dirname(os.path.abspath(__file__)) + "/smtpd.cfg.default"))
     config.read(["smtpd.cfg",])
 
     # Configure the logger
