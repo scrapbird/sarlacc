@@ -1,2 +1,3 @@
 data/
+#smtpd/src/smtpd.cfg
 *__pycache__*

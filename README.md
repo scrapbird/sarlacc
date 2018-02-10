@@ -38,6 +38,10 @@ If you want to use different credentials (you should) then modify the `postgres_
 The server will then be listening for SMTP connections on port `2500`.
 
 
+### Data
+Data for both postgres and mongodb is stored by docker in the `data` directory, keep this here if you want to keep data from previous sessions.
+
+
 ### Requirements
 
 python3.5
