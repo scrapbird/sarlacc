@@ -1,5 +1,4 @@
 from base64 import b64encode, b64decode
-import pymongo
 from motor.motor_asyncio import AsyncIOMotorClient
 import psycopg2
 import aiopg
