@@ -13,12 +13,6 @@ This is work in progress code and there will probably be bugs but it does everyt
 
 To get started with docker-compose, simply run `docker-compose up`.
 
-Once the docker containers are running, the postgres database will need to be initialized and permissions granted to the user to access the database:
-```
-psql -h localhost -U postgres < postgres_init.sql
-psql -h localhost -U postgres -d sarlacc < postgres_grant.sql
-```
-
 The server will then be listening for SMTP connections on port `2500`.
 
 #### Data
@@ -33,7 +27,13 @@ To configure sarlacc, copy the default config file to `smtpd/src/smtpd.cfg` and 
 cp smtpd/src/smtpd.cfg.default smtpd/src/smtpd.cfg
 $EDITOR smtpd/src/smtpd.cfg
 ```
-Then edit the file with your required configuration. You can use the `postgres_init.sql` and `postgres_grant.sql` scripts as detailed in the [docker-compose](#docker-compose) section above to intitialize the database for use with sarlacc (yeah one day I'll get around to doing that automatically).
+Then edit the file with your required configuration.
+
+You can use the `postgres/postgres_init.sql` script to intitialize the database for use with sarlacc.
+```
+psql -h localhost -U postgres < postgres/postgres_init.sql
+```
+
 
 
 If you want to use different credentials (you should) then modify the `postgres_init.sql`, `postgres_grant.sql` and the config file for the smtp server appropriately.

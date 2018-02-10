@@ -34,6 +34,46 @@ class StorageControl:
                 user=self.config['postgres']['user'],
                 password=self.config['postgres']['password'])
 
+        try:
+            curs = await self.postgres.cursor()
+            # create tables if they don't already exist
+            await curs.execute('''
+                CREATE TABLE body (
+                        id SERIAL PRIMARY KEY,
+                        sha256 text,
+                        content text
+                );
+
+                CREATE TABLE mailitem (
+                        id SERIAL PRIMARY KEY,
+                        datesent timestamp,
+                        subject text,
+                        fromaddress text,
+                        bodyid integer REFERENCES body (id)
+                );
+
+                CREATE TABLE recipient (
+                        id SERIAL PRIMARY KEY,
+                        emailaddress text
+                );
+
+                CREATE TABLE mailrecipient (
+                        id SERIAL PRIMARY KEY,
+                        recipientid integer REFERENCES recipient (id),
+                        mailid integer REFERENCES mailitem (id)
+                );
+
+                CREATE TABLE attachment (
+                        id SERIAL PRIMARY KEY,
+                        mailid integer REFERENCES mailitem (id),
+                        sha256 text,
+                        filename text
+                );
+            ''')
+            logger.debug("Created fresh database")
+        except:
+            pass
+
 
     def get_sha256(self, data):
         m = hashlib.sha256()
