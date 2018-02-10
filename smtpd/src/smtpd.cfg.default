@@ -12,7 +12,7 @@ port = 27017
 host = postgres
 database = sarlacc
 user = user
-password = password
+password = user
 
 [logging]
 log_level = INFO

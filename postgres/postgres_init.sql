@@ -1,9 +1,3 @@
-CREATE DATABASE sarlacc;
-
-\connect sarlacc
-
-CREATE ROLE "user";
-
 DROP TABLE attachment CASCADE;
 DROP TABLE recipient CASCADE;
 DROP TABLE mailrecipient CASCADE;
@@ -41,4 +35,3 @@ CREATE TABLE attachment (
 	sha256 text,
 	filename text
 );
-

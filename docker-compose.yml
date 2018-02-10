@@ -6,7 +6,7 @@ services:
     ports:
       - "27017:27017"
     volumes:
-      - sarlacc-mongodb:/data/db
+      - mongodb:/data/db
 
   postgres:
     image: "postgres:9.2-alpine"
@@ -14,9 +14,11 @@ services:
     ports:
       - "5432:5432"
     volumes:
-      - sarlacc-postgres:/var/lib/postgresql/data
+      - postgres:/var/lib/postgresql/data
     environment:
       PGDATA: /var/lib/postgresql/data/pgdata
+      POSTGRES_DB: sarlacc
+      POSTGRES_USER: user
 
   smtpd:
     build: ./smtpd
@@ -29,6 +31,6 @@ services:
       - "5000:5000"
 
 volumes:
-  sarlacc-mongodb:
-  sarlacc-postgres:
+  mongodb:
+  postgres:
 
