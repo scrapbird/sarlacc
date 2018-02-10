@@ -92,7 +92,7 @@ class StorageControl:
                         user=user,
                         database=database,
                         password=password)
-                logger.info("Connected")
+                logger.info("Successfully connected to postgres")
                 return postgres
             except:
                 logger.warn("Failed to connect to postgres")
