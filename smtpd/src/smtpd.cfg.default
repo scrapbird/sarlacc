@@ -1,8 +1,8 @@
 [smtpd]
 host = 0.0.0.0
 port = 2500
-hostname = "mx.google.com"
-ident = "ESMTP m66si1320047qki.162 - gsmtp"
+hostname = mx.google.com
+ident = ESMTP m66si1320047qki.162 - gsmtp
 
 [mongodb]
 host = mongodb
