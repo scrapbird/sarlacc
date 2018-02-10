@@ -12,10 +12,12 @@ from plugin_manager import PluginManager
 
 logger = logging.getLogger()
 
+
 def main():
     # Read config
     config = ConfigParser()
-    config.read("./smtpd.cfg")
+    config.readfp(open("./smtpd.cfg.default"))
+    config.read(["smtpd.cfg",])
 
     # Configure the logger
     logging.basicConfig(level=getattr(logging, config["logging"]["log_level"].upper()),
