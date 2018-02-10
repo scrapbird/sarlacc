@@ -36,7 +36,7 @@ psql -h localhost -U postgres < postgres/postgres_init.sql
 
 
 
-If you want to use different credentials (you should) then modify the `postgres_init.sql`, `postgres_grant.sql` and the config file for the smtp server appropriately.
+If you want to use different credentials (you should) then modify the `postgres_init.sql` and the config file for the smtp server appropriately.
 
 The server will then be listening for SMTP connections on port `2500`.
 
