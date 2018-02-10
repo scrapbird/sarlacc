@@ -48,7 +48,7 @@ pip install -r requirements.txt
 
 Start the server:
 ```
-app.py
+./app.py
 ```
 
 The server will then be listening for SMTP connections on port `2500`.
