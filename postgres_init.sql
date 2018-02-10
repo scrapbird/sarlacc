@@ -1,3 +1,5 @@
+CREATE DATABASE sarlacc;
+
 \connect sarlacc
 
 CREATE ROLE "user";
