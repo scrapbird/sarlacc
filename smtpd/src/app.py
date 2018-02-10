@@ -48,6 +48,8 @@ def main():
         if not threading.current_thread() == thread:
             thread.join()
 
+    plugin_manager.stop_plugins()
+
 
 if __name__ == "__main__":
     main()

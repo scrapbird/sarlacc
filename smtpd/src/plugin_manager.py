@@ -26,9 +26,14 @@ class PluginManager():
                     logger.error("Failed to load plugin/{}".format(name))
                     logger.error(traceback.format_exc())
 
+
     def run_plugins(self):
         for plugin in self.plugins:
             plugin.run()
+
+
+    def run_plugins(self):
+        for plugin in self.plugins:
             plugin.stop()
 
 
