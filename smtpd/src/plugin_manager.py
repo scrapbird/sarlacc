@@ -32,7 +32,7 @@ class PluginManager():
             plugin.run()
 
 
-    def run_plugins(self):
+    def stop_plugins(self):
         for plugin in self.plugins:
             plugin.stop()
 
