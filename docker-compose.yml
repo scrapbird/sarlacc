@@ -6,22 +6,29 @@ services:
     ports:
       - "27017:27017"
     volumes:
-      - ./data/mongo:/data/db
+      - sarlacc-mongodb:/data/db
+
   postgres:
     image: "postgres:9.2-alpine"
     # restart: always
     ports:
       - "5432:5432"
     volumes:
-      - ./data/postgres:/var/lib/postgresql/data
+      - sarlacc-postgres:/var/lib/postgresql/data
     environment:
       PGDATA: /var/lib/postgresql/data/pgdata
+
   smtpd:
     build: ./smtpd
     ports:
       - "2500:2500"
+
   web:
     build: ./web
     ports:
       - "5000:5000"
+
+volumes:
+  sarlacc-mongodb:
+  sarlacc-postgres:
 
