@@ -1,6 +1,7 @@
 asyncio
 aiosmtpd
 pymongo
+motor
 psycopg2
 ConfigParser
 aiopg

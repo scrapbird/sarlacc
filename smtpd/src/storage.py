@@ -1,5 +1,6 @@
 from base64 import b64encode, b64decode
-from pymongo import MongoClient
+import pymongo
+from motor.motor_asyncio import AsyncIOMotorClient
 import psycopg2
 import aiopg
 import hashlib
@@ -22,7 +23,7 @@ class StorageControl:
         self.plugin_manager = plugin_manager
         self.loop = loop
 
-        self.mongo = MongoClient("mongodb://{}:{}".format(
+        self.mongo = AsyncIOMotorClient("mongodb://{}:{}".format(
             config['mongodb']['host'],
             config['mongodb']['port']))
 
@@ -35,11 +36,11 @@ class StorageControl:
                 password=self.config['postgres']['password'])
 
 
-
     def get_sha256(self, data):
         m = hashlib.sha256()
         m.update(data)
         return m.hexdigest()
+
 
     async def try_connect_postgres(self, host, user, password, database):
         while True:
@@ -152,11 +153,11 @@ class StorageControl:
                 sarlacc = self.mongo['sarlacc']
 
                 logger.info("Checking if attachment already in db")
-                existing = sarlacc["samples"].find_one({"sha256": attachmentSHA256})
+                existing = await sarlacc["samples"].find_one({"sha256": attachmentSHA256})
                 if not existing:
                     content = b64encode(attachment["content"].encode("utf-8"))
                     logger.info("Storing attachment in db")
-                    sarlacc["samples"].insert_one({
+                    await sarlacc["samples"].insert_one({
                         "sha256": attachmentSHA256,
                         "content": content})
                     logger.info("Stored file")
