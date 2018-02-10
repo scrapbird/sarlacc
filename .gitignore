@@ -1,3 +1,4 @@
 smtpd/src/smtpd.cfg
 *__pycache__*
 .idea/
+.vscode
