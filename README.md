@@ -21,6 +21,9 @@ psql -h localhost -U postgres -d sarlacc < postgres_grant.sql
 
 The server will then be listening for SMTP connections on port `2500`.
 
+#### Data
+To ensure proper data persistence, data for both postgres and mongodb is stored in docker volumes.
+
 
 ### Production
 
@@ -36,10 +39,6 @@ Then edit the file with your required configuration. You can use the `postgres_i
 If you want to use different credentials (you should) then modify the `postgres_init.sql`, `postgres_grant.sql` and the config file for the smtp server appropriately.
 
 The server will then be listening for SMTP connections on port `2500`.
-
-
-### Data
-To ensure proper data persistence, data for both postgres and mongodb is stored in docker volumes.
 
 
 ### Requirements
