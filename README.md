@@ -22,7 +22,7 @@ To ensure proper data persistence, data for both postgres and mongodb is stored 
 ### Production
 
 If installing in a production environment which requires a proper setup, an install of mongodb and postgresql will be required.
-To configure sarlacc, copy the default config file to `smtpd/src/smtpd.cfg` and onverride the settings you wish to change:
+To configure sarlacc, copy the default config file to `smtpd/src/smtpd.cfg` and override the settings you wish to change:
 ```
 cp smtpd/src/smtpd.cfg.default smtpd/src/smtpd.cfg
 $EDITOR smtpd/src/smtpd.cfg
