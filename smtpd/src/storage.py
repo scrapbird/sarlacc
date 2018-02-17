@@ -75,7 +75,7 @@ class StorageControl:
             pass
 
 
-    def get_sha256(self, data):
+    def __get_sha256(self, data):
         m = hashlib.sha256()
         m.update(data)
         return m.hexdigest()
@@ -156,7 +156,7 @@ class StorageControl:
         logger.debug("-" * 80)
 
         async with self.postgres.acquire() as conn:
-            bodySHA256 = self.get_sha256(body.encode("utf-8"))
+            bodySHA256 = self.__get_sha256(body.encode("utf-8"))
             async with conn.cursor() as curs:
                 logger.debug("curs: {}".format(curs))
                 # insert if not existing already, otherwise return existing record
@@ -228,7 +228,7 @@ class StorageControl:
 
                 if attachments != None:
                     for attachment in attachments:
-                        attachmentSHA256 = self.get_sha256(attachment["content"])
+                        attachmentSHA256 = self.__get_sha256(attachment["content"])
                         await curs.execute("INSERT INTO attachment (sha256, mailid, filename) values (%s, %s, %s) returning *;",
                                 (attachmentSHA256, mailitem[0], attachment['fileName'],))
 
