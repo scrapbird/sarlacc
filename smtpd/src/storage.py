@@ -35,42 +35,43 @@ class StorageControl:
                 password=self.config['postgres']['password'])
 
         try:
-            curs = await self.postgres.cursor()
-            # create tables if they don't already exist
-            await curs.execute('''
-                CREATE TABLE body (
-                        id SERIAL PRIMARY KEY,
-                        sha256 text,
-                        content text
-                );
+            async with self.postgres.acquire() as conn:
+                curs = await conn.cursor()
+                # create tables if they don't already exist
+                await curs.execute('''
+                    CREATE TABLE body (
+                            id SERIAL PRIMARY KEY,
+                            sha256 text,
+                            content text
+                    );
 
-                CREATE TABLE mailitem (
-                        id SERIAL PRIMARY KEY,
-                        datesent timestamp,
-                        subject text,
-                        fromaddress text,
-                        bodyid integer REFERENCES body (id)
-                );
+                    CREATE TABLE mailitem (
+                            id SERIAL PRIMARY KEY,
+                            datesent timestamp,
+                            subject text,
+                            fromaddress text,
+                            bodyid integer REFERENCES body (id)
+                    );
 
-                CREATE TABLE recipient (
-                        id SERIAL PRIMARY KEY,
-                        emailaddress text
-                );
+                    CREATE TABLE recipient (
+                            id SERIAL PRIMARY KEY,
+                            emailaddress text
+                    );
 
-                CREATE TABLE mailrecipient (
-                        id SERIAL PRIMARY KEY,
-                        recipientid integer REFERENCES recipient (id),
-                        mailid integer REFERENCES mailitem (id)
-                );
+                    CREATE TABLE mailrecipient (
+                            id SERIAL PRIMARY KEY,
+                            recipientid integer REFERENCES recipient (id),
+                            mailid integer REFERENCES mailitem (id)
+                    );
 
-                CREATE TABLE attachment (
-                        id SERIAL PRIMARY KEY,
-                        mailid integer REFERENCES mailitem (id),
-                        sha256 text,
-                        filename text
-                );
-            ''')
-            logger.debug("Created fresh database")
+                    CREATE TABLE attachment (
+                            id SERIAL PRIMARY KEY,
+                            mailid integer REFERENCES mailitem (id),
+                            sha256 text,
+                            filename text
+                    );
+                ''')
+                logger.debug("Created fresh database")
         except:
             pass
 
@@ -86,7 +87,7 @@ class StorageControl:
             logger.info("Trying to connect to postgres... {}@{}/{}".format(user, host, database))
             logger.debug("loop: {}".format(self.loop))
             try:
-                postgres = await aiopg.connect(
+                postgres = await aiopg.create_pool(
                         loop=self.loop,
                         host=host,
                         user=user,
@@ -109,101 +110,101 @@ class StorageControl:
         logger.debug("date_sent: {}".format(date_sent))
         logger.debug("-" * 80)
 
-        # async with self.postgres.cursor() as curs:
-        bodySHA256 = self.get_sha256(b64encode(body.encode("utf-8")))
-        curs = await self.postgres.cursor()
-        logger.debug("curs: {}".format(curs))
-        # insert if not existing already, otherwise return existing record
-        await curs.execute('''
-                WITH s AS (
-                    SELECT id, sha256, content
-                    FROM body
-                    WHERE sha256 = %s
-                ), i as (
-                    INSERT INTO body (sha256, content)
-                    SELECT %s, %s
-                    WHERE NOT EXISTS (SELECT 1 FROM s)
-                    RETURNING id, sha256, content
-                )
-                SELECT id, sha256, content
-                FROM i
-                UNION ALL
-                SELECT id, sha256, content
-                FROM s;
-                ''',
-                (bodySHA256, bodySHA256, body,))
-        bodyRecord = await curs.fetchone()
-        bodyId = bodyRecord[0]
-        logger.debug("Body ID: {}".format(bodyId))
-
-        # add a mailitem
-        await curs.execute("INSERT INTO mailitem (datesent, subject, fromaddress, bodyid) values (%s, %s, %s, %s) returning *;",
-                (date_sent, subject, from_address, bodyId,))
-        mailitem = await curs.fetchone()
-
-        # inform plugins
-        await self.plugin_manager.emit_new_mail_item(mailitem[0], subject, to_address_list, from_address, body, date_sent, attachments)
-
-        # add recipients
-        recipientList = []
-        for recipient in to_address_list:
+        async with self.postgres.acquire() as conn:
+            bodySHA256 = self.get_sha256(b64encode(body.encode("utf-8")))
+            curs = await conn.cursor()
+            logger.debug("curs: {}".format(curs))
             # insert if not existing already, otherwise return existing record
             await curs.execute('''
                     WITH s AS (
-                        SELECT id, emailaddress
-                        FROM recipient
-                        WHERE emailaddress = %s
+                        SELECT id, sha256, content
+                        FROM body
+                        WHERE sha256 = %s
                     ), i as (
-                        INSERT INTO recipient (emailaddress)
-                        SELECT %s
+                        INSERT INTO body (sha256, content)
+                        SELECT %s, %s
                         WHERE NOT EXISTS (SELECT 1 FROM s)
-                        RETURNING id, emailaddress
+                        RETURNING id, sha256, content
                     )
-                    SELECT id, emailaddress
+                    SELECT id, sha256, content
                     FROM i
                     UNION ALL
-                    SELECT id, emailaddress
+                    SELECT id, sha256, content
                     FROM s;
                     ''',
-                    (recipient, recipient,))
-            recipientRecord = await curs.fetchone()
-            recipientList.append(recipientRecord)
+                    (bodySHA256, bodySHA256, body,))
+            bodyRecord = await curs.fetchone()
+            bodyId = bodyRecord[0]
+            logger.debug("Body ID: {}".format(bodyId))
 
-            # link this recipient to the mailitem
-            await curs.execute("INSERT INTO mailrecipient (recipientid, mailid) values (%s, %s);", (recipientRecord[0], mailitem[0]))
+            # add a mailitem
+            await curs.execute("INSERT INTO mailitem (datesent, subject, fromaddress, bodyid) values (%s, %s, %s, %s) returning *;",
+                    (date_sent, subject, from_address, bodyId,))
+            mailitem = await curs.fetchone()
 
-            # check if this is a new email address in the recipient list and if so, inform registered plugins
-            if recipient is not recipientRecord[1]:
-                # new email address
-                await self.plugin_manager.emit_new_email_address(
-                        _id=recipientRecord[0],
-                        email_address=recipientRecord[1])
+            # inform plugins
+            await self.plugin_manager.emit_new_mail_item(mailitem[0], subject, to_address_list, from_address, body, date_sent, attachments)
+
+            # add recipients
+            recipientList = []
+            for recipient in to_address_list:
+                # insert if not existing already, otherwise return existing record
+                await curs.execute('''
+                        WITH s AS (
+                            SELECT id, emailaddress
+                            FROM recipient
+                            WHERE emailaddress = %s
+                        ), i as (
+                            INSERT INTO recipient (emailaddress)
+                            SELECT %s
+                            WHERE NOT EXISTS (SELECT 1 FROM s)
+                            RETURNING id, emailaddress
+                        )
+                        SELECT id, emailaddress
+                        FROM i
+                        UNION ALL
+                        SELECT id, emailaddress
+                        FROM s;
+                        ''',
+                        (recipient, recipient,))
+                recipientRecord = await curs.fetchone()
+                recipientList.append(recipientRecord)
+
+                # link this recipient to the mailitem
+                await curs.execute("INSERT INTO mailrecipient (recipientid, mailid) values (%s, %s);", (recipientRecord[0], mailitem[0]))
+
+                # check if this is a new email address in the recipient list and if so, inform registered plugins
+                if recipient is not recipientRecord[1]:
+                    # new email address
+                    await self.plugin_manager.emit_new_email_address(
+                            _id=recipientRecord[0],
+                            email_address=recipientRecord[1])
 
 
-        if attachments != None:
-            for attachment in attachments:
-                attachmentSHA256 = self.get_sha256(b64encode(attachment["content"].encode("utf-8")))
-                await curs.execute("INSERT INTO attachment (sha256, mailid, filename) values (%s, %s, %s) returning *;",
-                        (attachmentSHA256, mailitem[0], attachment['fileName'],))
+            if attachments != None:
+                for attachment in attachments:
+                    attachmentSHA256 = self.get_sha256(b64encode(attachment["content"].encode("utf-8")))
+                    await curs.execute("INSERT INTO attachment (sha256, mailid, filename) values (%s, %s, %s) returning *;",
+                            (attachmentSHA256, mailitem[0], attachment['fileName'],))
 
-                attachmentRecord = await curs.fetchone()
+                    attachmentRecord = await curs.fetchone()
 
-                # check if attachment has been seen, if not store it in mongodb
-                sarlacc = self.mongo['sarlacc']
+                    # check if attachment has been seen, if not store it in mongodb
+                    sarlacc = self.mongo['sarlacc']
 
-                logger.info("Checking if attachment already in db")
-                existing = await sarlacc["samples"].find_one({"sha256": attachmentSHA256})
-                if not existing:
-                    content = b64encode(attachment["content"].encode("utf-8"))
-                    logger.info("Storing attachment in db")
-                    await sarlacc["samples"].insert_one({
-                        "sha256": attachmentSHA256,
-                        "content": content})
-                    logger.info("Stored file")
+                    logger.info("Checking if attachment already in db")
+                    existing = await sarlacc["samples"].find_one({"sha256": attachmentSHA256})
+                    if not existing:
+                        content = b64encode(attachment["content"].encode("utf-8"))
+                        logger.info("Storing attachment in db")
+                        await sarlacc["samples"].insert_one({
+                            "sha256": attachmentSHA256,
+                            "content": content})
+                        logger.info("Stored file")
 
-                    # inform plugins of new attachment
-                    await self.plugin_manager.emit_new_attachment(
-                            _id=attachmentRecord[0],
-                            sha256=attachmentSHA256,
-                            content=content)
+                        # inform plugins of new attachment
+                        await self.plugin_manager.emit_new_attachment(
+                                _id=attachmentRecord[0],
+                                sha256=attachmentSHA256,
+                                content=content)
 
