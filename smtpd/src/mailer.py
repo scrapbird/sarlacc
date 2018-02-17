@@ -6,6 +6,7 @@ import functools
 from datetime import datetime
 from aiosmtpd.controller import Controller
 from aiosmtpd.smtp import SMTP as Server
+from base64 import b64decode
 import storage
 
 
@@ -35,13 +36,16 @@ class MailHandler:
     def __init__(self, loop, config, plugin_manager):
         self.loop = loop
         self.config = config
-        self.plugin_manager = plugin_manager # not using yet but probably will at some point
+        self.plugin_manager = plugin_manager
         loop.create_task(self.init_store())
 
 
     async def init_store(self):
         # Init storage handlers
         self.store = await storage.create_storage(self.config, self.plugin_manager, self.loop)
+
+        self.plugin_manager.load_plugins(self.store, "plugins")
+        self.plugin_manager.run_plugins()
 
 
     async def handle_DATA(self, server, session, envelope):
@@ -50,7 +54,6 @@ class MailHandler:
         from_address = envelope.mail_from
         body = None
         attachments = []
-        filename = None
         date_sent = datetime.now()
 
         # Parse message
@@ -60,12 +63,18 @@ class MailHandler:
             if message.is_multipart():
                 for part in message.get_payload():
                     if "Content-Disposition" in part and "attachment;" in part["Content-Disposition"]:
+                        filename = None
                         matches = re.findall(r'filename=".*"', part["Content-Disposition"])
                         if len(matches) > 0:
                             a = matches[0].index('"')
                             b = matches[0].index('"', a + 1)
                             fileName = matches[0][a + 1:b]
                             content = part.get_payload()
+
+                            # Check if attachment is base64 encoded
+                            if "Content-Transfer-Encoding" in part and "base64" in part["Content-Transfer-Encoding"]:
+                                content = b64decode(content.strip())
+
                             attachments.append({
                                 "content": content,
                                 "fileName": fileName})
@@ -76,12 +85,18 @@ class MailHandler:
             else:
                 # This is gross
                 if "Content-Disposition" in message and "attachment;" in message["Content-Disposition"]:
+                    filename = None
                     matches = re.findall(r'filename=".*"', message["Content-Disposition"])
                     if len(matches) > 0:
                         a = matches[0].index('"')
                         b = matches[0].index('"', a + 1)
                         fileName = matches[0][a + 1:b]
                         content = message.get_payload()
+
+                        # Check if attachment is base64 encoded
+                        if "Content-Transfer-Encoding" in part and "base64" in part["Content-Transfer-Encoding"]:
+                            content = b64decode(content.strip())
+
                         attachments.append({
                             "content": content,
                             "fileName": fileName})

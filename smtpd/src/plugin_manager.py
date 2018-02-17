@@ -14,13 +14,13 @@ class PluginManager():
         self.plugins = []
 
 
-    def load_plugins(self, directory):
+    def load_plugins(self, store, directory):
         for name in os.listdir(os.path.dirname(os.path.abspath(__file__)) + "/" + directory):
             if name.endswith(".py") and not name == "plugin.py":
                 module_name = name[:-3]
                 try:
                     module = import_module("plugins." + module_name)
-                    self.plugins.append(module.Plugin(logger))
+                    self.plugins.append(module.Plugin(logger, store))
                     logger.info("Loaded plugins/{}".format(name))
                 except Exception as e:
                     logger.error("Failed to load plugin/{}".format(name))

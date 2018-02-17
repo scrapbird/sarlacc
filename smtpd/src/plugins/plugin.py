@@ -1,6 +1,7 @@
 class SarlaccPlugin:
-    def __init__(self, logger):
+    def __init__(self, logger, store):
         self.logger = logger
+        self.store = store
 
 
     def run(self):

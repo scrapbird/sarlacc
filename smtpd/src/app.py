@@ -29,8 +29,6 @@ def main():
 
     # Init plugin manager
     plugin_manager = PluginManager(loop)
-    plugin_manager.load_plugins("plugins")
-    plugin_manager.run_plugins()
 
     logger.info("Starting smtpd on {}:{}".format(config["smtpd"]["host"], config["smtpd"]["port"]))
     cont = CustomIdentController(
