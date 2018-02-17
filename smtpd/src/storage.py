@@ -187,9 +187,6 @@ class StorageControl:
                         (date_sent, subject, from_address, bodyId,))
                 mailitem = await curs.fetchone()
 
-                # inform plugins
-                await self.plugin_manager.emit_new_mail_item(mailitem[0], subject, to_address_list, from_address, body, date_sent, attachments)
-
                 # add recipients
                 recipientList = []
                 for recipient in to_address_list:
@@ -252,4 +249,7 @@ class StorageControl:
                                     _id=attachmentRecord[0],
                                     sha256=attachmentSHA256,
                                     content=content)
+
+                # inform plugins
+                await self.plugin_manager.emit_new_mail_item(mailitem[0], subject, to_address_list, from_address, body, date_sent, attachments)
 
