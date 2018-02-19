@@ -5,7 +5,7 @@ class Plugin(SarlaccPlugin):
         self.logger.info("This is an example plugin")
 
 
-    async def new_attachment(self, _id, sha256, content):
+    async def new_attachment(self, _id, sha256, content, filename, tags):
         self.logger.info("Plugin alerting to new attachment with sha256: %s", sha256)
 
 
@@ -17,3 +17,5 @@ class Plugin(SarlaccPlugin):
         self.logger.info("Plugin alerting to new mail item with subject: %s", subject)
 
         mailitem = await self.store.get_email_by_id(_id)
+        self.logger.info(attachments)
+        await self.store.add_attachment_tag(attachments[0]["sha256"], "testing")

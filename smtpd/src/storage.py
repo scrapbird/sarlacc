@@ -99,6 +99,20 @@ class StorageControl:
                 time.sleep(5)
 
 
+    # TODO Add attachment (refactor store_email)
+    # TODO Get attachment by id
+    # TODO Get attachment by sha256
+
+
+    async def add_attachment_tag(self, sha256, tag):
+        sarlacc = self.mongo["sarlacc"]
+        await sarlacc["samples"].update_one({"sha256": sha256},
+                {"$addToSet":
+                    {"tags": tag}})
+
+        # await attachment["tags"].update({'tags': tag}, {'$push': {'tags': new_tag}})
+
+
     async def get_email_attachments(self, email_id):
         async with self.postgres.acquire() as conn:
             async with conn.cursor() as curs:
@@ -112,13 +126,14 @@ class StorageControl:
                 attachments = []
                 for record in attachment_records:
                     # Fetch the content
-                    sarlacc = self.mongo['sarlacc']
+                    sarlacc = self.mongo["sarlacc"]
                     logger.info("Fetching attachment with sha256: %s", record[2])
                     attachment_info = await sarlacc["samples"].find_one({"sha256": record[2]})
                     attachments.append({
                         "sha256": record[2],
                         "filename": record[3],
-                        "content": attachment_info["content"]})
+                        "content": attachment_info["content"],
+                        "tags": attachment_info["tags"]})
 
                 return attachments
 
@@ -143,6 +158,7 @@ class StorageControl:
                         "body_content": email[7],
                         "attachments": await self.get_email_attachments(email_id)
                         }
+
 
 
     async def store_email(self, subject, to_address_list, from_address, body, date_sent, attachments):
@@ -226,8 +242,10 @@ class StorageControl:
                 if attachments != None:
                     for attachment in attachments:
                         attachmentSHA256 = self.__get_sha256(attachment["content"])
+                        attachment["sha256"] = attachmentSHA256
+                        attachment["tags"] = []
                         await curs.execute("INSERT INTO attachment (sha256, mailid, filename) values (%s, %s, %s) returning *;",
-                                (attachmentSHA256, mailitem[0], attachment['fileName'],))
+                                (attachmentSHA256, mailitem[0], attachment["filename"],))
 
                         attachmentRecord = await curs.fetchone()
 
@@ -236,19 +254,24 @@ class StorageControl:
 
                         logger.info("Checking if attachment already in db")
                         existing = await sarlacc["samples"].find_one({"sha256": attachmentSHA256})
-                        if not existing:
-                            content = attachment["content"]
-                            logger.info("Storing attachment in db")
+                        if existing:
+                            attachment["tags"] = existing["tags"]
+                        else:
+                            logger.info("Storing attachment in mongodb")
                             await sarlacc["samples"].insert_one({
                                 "sha256": attachmentSHA256,
-                                "content": content})
+                                "content": attachment["content"],
+                                "filename": attachment["filename"],
+                                "tags": []})
                             logger.info("Stored file")
 
                             # inform plugins of new attachment
                             await self.plugin_manager.emit_new_attachment(
                                     _id=attachmentRecord[0],
                                     sha256=attachmentSHA256,
-                                    content=content)
+                                    content=attachment["content"],
+                                    filename=attachment["filename"],
+                                    tags=[])
 
                 # inform plugins
                 await self.plugin_manager.emit_new_mail_item(mailitem[0], subject, to_address_list, from_address, body, date_sent, attachments)

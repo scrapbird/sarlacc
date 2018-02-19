@@ -68,7 +68,7 @@ class MailHandler:
                         if len(matches) > 0:
                             a = matches[0].index('"')
                             b = matches[0].index('"', a + 1)
-                            fileName = matches[0][a + 1:b]
+                            filename = matches[0][a + 1:b]
                             content = part.get_payload()
 
                             # Check if attachment is base64 encoded
@@ -77,7 +77,7 @@ class MailHandler:
 
                             attachments.append({
                                 "content": content,
-                                "fileName": fileName})
+                                "filename": filename})
                     elif "Content-Type" in part and "text/plain" in part["Content-Type"]:
                         body = part.get_payload()
                     elif "Content-Type" in part and "text/html" in part["Content-Type"]:
@@ -90,7 +90,7 @@ class MailHandler:
                     if len(matches) > 0:
                         a = matches[0].index('"')
                         b = matches[0].index('"', a + 1)
-                        fileName = matches[0][a + 1:b]
+                        filename = matches[0][a + 1:b]
                         content = message.get_payload()
 
                         # Check if attachment is base64 encoded
@@ -99,7 +99,7 @@ class MailHandler:
 
                         attachments.append({
                             "content": content,
-                            "fileName": fileName})
+                            "filename": filename})
                 elif "Content-Type" in message and "text/plain" in message["Content-Type"]:
                     body = message.get_payload()
                 elif "Content-Type" in message and "text/html" in message["Content-Type"]:

@@ -12,7 +12,7 @@ class SarlaccPlugin:
         pass
 
 
-    async def new_attachment(self, _id, sha256, content):
+    async def new_attachment(self, _id, sha256, content, filename, tags):
         pass
 
 
