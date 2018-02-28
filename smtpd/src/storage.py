@@ -182,7 +182,7 @@ class StorageControl:
 
         if attachments != None:
             for attachment in attachments:
-                attachmentSHA256 = self.get_sha256(b64encode(attachment["content"].encode("utf-8")))
+                attachmentSHA256 = self.get_sha256(b64decode(attachment["content"].encode("utf-8")))
                 await curs.execute("INSERT INTO attachment (sha256, mailid, filename) values (%s, %s, %s) returning *;",
                         (attachmentSHA256, mailitem[0], attachment['fileName'],))
 
