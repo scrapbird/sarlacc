@@ -194,7 +194,7 @@ class StorageControl:
                 logger.info("Checking if attachment already in db")
                 existing = await sarlacc["samples"].find_one({"sha256": attachmentSHA256})
                 if not existing:
-                    content = b64encode(attachment["content"].encode("utf-8"))
+                    content = b64decode(attachment["content"].encode("utf-8"))
                     logger.info("Storing attachment in db")
                     await sarlacc["samples"].insert_one({
                         "sha256": attachmentSHA256,
