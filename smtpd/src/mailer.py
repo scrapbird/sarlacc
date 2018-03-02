@@ -14,18 +14,46 @@ logger = logging.getLogger()
 
 
 async def create_mailer(handler, loop, ident_hostname, ident, **kwargs):
-    mailer = Mailer(handler, loop, ident_hostname, ident, **kwargs)
-    return mailer
+    """Creates and initializes a ``Mailer`` object
+
+    Args:
+        loop -- asyncio loop.
+        ident_hostname -- the hostname to use in the ident message.
+        ident -- the version string.
+
+    Returns:
+        The Mailer object.
+    """
+
+    return Mailer(handler, loop, ident_hostname, ident, **kwargs)
 
 
 class CustomIdentController(Controller):
     def __init__(self, handler, loop, ident_hostname, ident, **kwargs):
+        """Init method for ``CustomIdentController``.
+
+        Args:
+            handler -- the smtpd MailHandler object.
+            loop -- the asyncio loop.
+            ident_hostname -- the hostname to use in the ident message.
+            ident -- the version string.
+        """
+
         self.loop = loop
         self.ident_hostname = ident_hostname
         self.ident = ident
         super(CustomIdentController, self).__init__(handler, loop=loop, **kwargs)
 
     def factory(self):
+        """``CustomIdentController`` factory.
+
+        Overrides ``super.factory()``.
+        Creates an aiosmtpd server object.
+
+        Returns:
+            Returns the server object.
+        """
+
         server = Server(self.handler)
         server.hostname = self.ident_hostname
         server.__ident__ = self.ident
@@ -34,6 +62,14 @@ class CustomIdentController(Controller):
 
 class MailHandler:
     def __init__(self, loop, config, plugin_manager):
+        """The init method for the ``MailHandler`` class.
+
+        Args:
+            loop -- the ``asyncio`` loop.
+            config -- the sarlacc ``config`` object.
+            plugin_manager -- the sarlacc ``plugin_manager`` object.
+        """
+
         self.loop = loop
         self.config = config
         self.plugin_manager = plugin_manager
@@ -41,6 +77,11 @@ class MailHandler:
 
 
     async def init_store(self):
+        """Intialize the storage backend.
+
+        This will create the storage backend and load and run any plugins.
+        """
+
         # Init storage handlers
         self.store = await storage.create_storage(self.config, self.plugin_manager, self.loop)
 
@@ -49,6 +90,20 @@ class MailHandler:
 
 
     async def handle_DATA(self, server, session, envelope):
+        """DATA header handler.
+
+        Overrides ``super.handle_DATA``
+        This will be called when a DATA header is received by the mail server.
+
+        Args:
+            server -- the ``aiosmtpd`` server.
+            session -- the ``aiosmtpd`` session.
+            envelope -- the data envelope.
+
+        Returns:
+            The response string to send to the client.
+        """
+
         subject = ""
         to_address_list = envelope.rcpt_tos
         from_address = envelope.mail_from

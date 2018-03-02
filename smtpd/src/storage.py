@@ -10,11 +10,16 @@ logger = logging.getLogger()
 
 
 async def create_storage(config, plugin_manager, loop):
-    """Creates and initializes a storage object
+    """Creates and initializes a storage object.
 
-    plugin_manager -- sarlacc plugin_manager object
-    loop -- asyncio loop
+    Args:
+        plugin_manager -- sarlacc plugin_manager object.
+        loop -- asyncio loop.
+
+    Returns:
+        The storage object.
     """
+
     storage = StorageControl(config, plugin_manager, loop)
     await storage._init()
     return storage
@@ -22,13 +27,14 @@ async def create_storage(config, plugin_manager, loop):
 
 class StorageControl:
     def __init__(self, config, plugin_manager, loop):
-        """Init method for StorageControl class
+        """Init method for StorageControl class.
 
         Args:
-        config -- sarlacc config object
-        plugin_manager -- sarlacc plugin_manager object
-        loop -- asyncio loop
+            config -- sarlacc config object
+            plugin_manager -- sarlacc plugin_manager object
+            loop -- asyncio loop
         """
+
         self.config = config
         self.plugin_manager = plugin_manager
         self.loop = loop
@@ -43,6 +49,7 @@ class StorageControl:
 
         Used to initialize postgres so we can await on the connect method.
         """
+
         self.postgres = await self.try_connect_postgres(
                 host=self.config['postgres']['host'],
                 database=self.config['postgres']['database'],
@@ -94,8 +101,11 @@ class StorageControl:
     def __get_sha256(self, data):
         """Calculate sha256 hash of data.
 
-        Arguments:
-        data -- the data to hash
+        Args:
+            data -- the data to hash.
+
+        Returns:
+            The sha256 hash.
         """
 
         m = hashlib.sha256()
@@ -106,11 +116,14 @@ class StorageControl:
     async def try_connect_postgres(self, host, user, password, database):
         """Loop forever and attempt to connect to postgres.
 
-        Arguments:
-        host -- the hostname to connect to
-        user -- the username to authenticate as
-        password -- the password to authenticate with
-        database -- the name of the database to use
+        Args:
+            host -- the hostname to connect to.
+            user -- the username to authenticate as.
+            password -- the password to authenticate with.
+            database -- the name of the database to use.
+
+        Returns:
+            The connected postgres client.
         """
 
         while True:
@@ -133,8 +146,18 @@ class StorageControl:
     async def get_attachment_by_selector(self, selector):
         """Gets an attachment using a mongodb query.
 
-        Arguments:
-        selector -- a query object for mongodb as documented here: https://docs.mongodb.com/manual/reference/method/db.collection.findOne/
+        Args:
+            selector -- a query object for mongodb as documented here: https://docs.mongodb.com/manual/reference/method/db.collection.findOne/
+
+        Returns:
+            The attachment object in the following format:
+                {
+                    tags[]: a list of tag strings attached to this attachment,
+                    sha256: the sha256 hash of this attachment,
+                    content: the raw file,
+                    filename: the filename,
+                    _id: the id of the attachment's postgresql record
+                }
         """
 
         sarlacc = self.mongo["sarlacc"]
@@ -144,8 +167,18 @@ class StorageControl:
     async def get_attachment_by_id(self, _id):
         """Gets an attachment by it's id.
 
-        Arguments:
-        _id -- the id of the attachment
+        Args:
+            _id -- the id of the attachment.
+
+        Returns:
+            The attachment object in the following format:
+                {
+                    tags[]: a list of tag strings attached to this attachment,
+                    sha256: the sha256 hash of this attachment,
+                    content: the raw file,
+                    filename: the filename,
+                    _id: the id of the attachment's postgresql record
+                }
         """
 
         async with self.postgres.acquire() as conn:
@@ -173,8 +206,18 @@ class StorageControl:
     async def get_attachment_by_sha256(self, sha256):
         """Gets an attachment by it's sha256 hash.
 
-        Arguments:
-        sha256 -- the hash to search for
+        Args:
+            sha256 -- the hash to search for.
+
+        Returns:
+            The attachment object in the following format:
+                {
+                    tags[]: a list of tag strings attached to this attachment,
+                    sha256: the sha256 hash of this attachment,
+                    content: the raw file,
+                    filename: the filename,
+                    _id: the id of the attachment's postgresql record
+                }
         """
 
         async with self.postgres.acquire() as conn:
@@ -199,8 +242,9 @@ class StorageControl:
     async def add_attachment_tag(self, sha256, tag):
         """Adds a tag to an attachment.
 
-        sha256 -- the hash of the attachment to tag
-        tag -- the string to tag it with
+        Args:
+            sha256 -- the hash of the attachment to tag.
+            tag -- the string to tag it with.
         """
 
         sarlacc = self.mongo["sarlacc"]
@@ -208,13 +252,22 @@ class StorageControl:
                 {"$addToSet":
                     {"tags": tag}})
 
-        # await attachment["tags"].update({'tags': tag}, {'$push': {'tags': new_tag}})
-
 
     async def get_email_attachments(self, email_id):
         """Gets an email's attachments.
 
-        email_id -- the id of the mailitem to get attachments for
+        Args:
+            email_id -- the id of the mailitem to get attachments for.
+
+        Returns:
+            A list of email attachment objects in the following format:
+                [{
+                    tags[]: a list of tag strings attached to this attachment,
+                    sha256: the sha256 hash of this attachment,
+                    content: the raw file,
+                    filename: the filename,
+                    _id: the id of the attachment's postgresql record
+                }]
         """
 
         async with self.postgres.acquire() as conn:
@@ -233,6 +286,7 @@ class StorageControl:
                     logger.info("Fetching attachment with sha256: %s", record[2])
                     attachment_info = await sarlacc["samples"].find_one({"sha256": record[2]})
                     attachments.append({
+                        "_id": record[0],
                         "sha256": record[2],
                         "filename": record[3],
                         "content": attachment_info["content"],
@@ -242,6 +296,34 @@ class StorageControl:
 
 
     async def get_email_by_id(self, email_id):
+        """Get email by id.
+
+        Gets a mail item by it's id.
+
+        Args:
+            email_id -- the id of the mail item.
+
+        Returns:
+            An email object in the following format:
+                {
+                    _id: the id of the email record in postgres,
+                    date_send: the date and time the email was sent,
+                    subject: the email subject,
+                    from_address: the email address in the from header,
+                    body_id: the id of the body record in postgres,
+                    body_sha256: the sha256 hash of the body,
+                    body_content: the content of the body,
+                    attachments: a list of email attachment objects in the following format:
+                        [{
+                            tags[]: a list of tag strings attached to this attachment,
+                            sha256: the sha256 hash of this attachment,
+                            content: the raw file,
+                            filename: the filename,
+                            _id: the id of the attachment's postgresql record
+                        }]
+                }
+        """
+
         async with self.postgres.acquire() as conn:
             async with conn.cursor() as curs:
                 await curs.execute('''
@@ -252,7 +334,7 @@ class StorageControl:
                         (email_id,))
                 email = await curs.fetchone()
                 return {
-                        "id": email[0],
+                        "_id": email[0],
                         "date_sent": email[1],
                         "subject": email[2],
                         "from_address": email[3],
@@ -267,18 +349,19 @@ class StorageControl:
     async def store_email(self, subject, to_address_list, from_address, body, date_sent, attachments):
         """A new email item.
 
-        Arguments:
-        subject -- the subject of the email
-        to_address_list -- a list of recipient email addresses
-        from_address -- the email address in the from header
-        body -- the email body
-        date_send -- the date and time the email was sent
-        attachments -- a list of attachment objects in the following format:
-            {
-                content: the content of the attachment (raw file),
-                filename: the name of the attachment filename
-            }
+        Args:
+            subject -- the subject of the email.
+            to_address_list -- a list of recipient email addresses.
+            from_address -- the email address in the from header.
+            body -- the email body.
+            date_send -- the date and time the email was sent.
+            attachments -- a list of attachment objects in the following format:
+                {
+                    content: the content of the attachment (raw file),
+                    filename: the name of the attachment filename
+                }
         """
+
         logger.debug("-" * 80)
         logger.debug("Subject: {}".format(subject))
         logger.debug("to_address_list: {}".format(to_address_list))
