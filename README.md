@@ -31,7 +31,7 @@ $EDITOR smtpd/src/smtpd.cfg
 ```
 Then edit the file with your required configuration.
 
-You can use the `postgres/postgres_init.sql` script to intitialize the database for use with sarlacc.
+You can use the `postgres/postgres_init.sql` script to initialize the database for use with sarlacc.
 ```
 psql -h localhost -U postgres < postgres/postgres_init.sql
 ```
@@ -70,4 +70,8 @@ The web client has not been built yet, to view the data you will need to manuall
 
 ## Plugins
 
-You can extend sarlacc via plugins. Simply drop a python file into `smtp/src/plugins`. There is an example plugin at `smtp/src/plugins/example.py`.
+You can extend sarlacc via plugins. Simply drop a python file into `smtpd/src/plugins`. There is an example plugin at `smtpd/src/plugins/example.py`.
+
+To get a full idea of what events are available for the plugins to be notified by, check out the `smtpd/src/plugins/plugin.py` file.
+
+Plugins are also exposed to the internal storage API, from which you can pull email items, recipients, attachments, tag attachments etc etc. Take a look at the `smtpd/src/storage.py` file for more info on how to use this.
