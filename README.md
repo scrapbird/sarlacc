@@ -6,6 +6,8 @@ It will collect all mail items sent to it in a postgres database, storing all at
 
 This is work in progress code and there will probably be bugs but it does everything I need.
 
+Warning: There will most likely be breaking changes as I flesh out the plugin API. Once it has stabilized I will give this a version number and try not to break anything else.
+
 
 ## Getting Started
 
