@@ -10,6 +10,11 @@ logger = logging.getLogger()
 
 
 async def create_storage(config, plugin_manager, loop):
+    """Creates and initializes a storage object
+
+    plugin_manager -- sarlacc plugin_manager object
+    loop -- asyncio loop
+    """
     storage = StorageControl(config, plugin_manager, loop)
     await storage._init()
     return storage
@@ -17,6 +22,13 @@ async def create_storage(config, plugin_manager, loop):
 
 class StorageControl:
     def __init__(self, config, plugin_manager, loop):
+        """Init method for StorageControl class
+
+        Args:
+        config -- sarlacc config object
+        plugin_manager -- sarlacc plugin_manager object
+        loop -- asyncio loop
+        """
         self.config = config
         self.plugin_manager = plugin_manager
         self.loop = loop
@@ -27,6 +39,10 @@ class StorageControl:
 
 
     async def _init(self):
+        """Async init method to be called once inside event loop.
+
+        Used to initialize postgres so we can await on the connect method.
+        """
         self.postgres = await self.try_connect_postgres(
                 host=self.config['postgres']['host'],
                 database=self.config['postgres']['database'],
@@ -76,12 +92,27 @@ class StorageControl:
 
 
     def __get_sha256(self, data):
+        """Calculate sha256 hash of data.
+
+        Arguments:
+        data -- the data to hash
+        """
+
         m = hashlib.sha256()
         m.update(data)
         return m.hexdigest()
 
 
     async def try_connect_postgres(self, host, user, password, database):
+        """Loop forever and attempt to connect to postgres.
+
+        Arguments:
+        host -- the hostname to connect to
+        user -- the username to authenticate as
+        password -- the password to authenticate with
+        database -- the name of the database to use
+        """
+
         while True:
             logger.info("Trying to connect to postgres... {}@{}/{}".format(user, host, database))
             logger.debug("loop: {}".format(self.loop))
@@ -100,11 +131,23 @@ class StorageControl:
 
 
     async def get_attachment_by_selector(self, selector):
+        """Gets an attachment using a mongodb query.
+
+        Arguments:
+        selector -- a query object for mongodb as documented here: https://docs.mongodb.com/manual/reference/method/db.collection.findOne/
+        """
+
         sarlacc = self.mongo["sarlacc"]
         return await sarlacc["samples"].find_one(selector)
 
 
     async def get_attachment_by_id(self, _id):
+        """Gets an attachment by it's id.
+
+        Arguments:
+        _id -- the id of the attachment
+        """
+
         async with self.postgres.acquire() as conn:
             async with conn.cursor() as curs:
                 await curs.execute('''
@@ -128,6 +171,12 @@ class StorageControl:
 
 
     async def get_attachment_by_sha256(self, sha256):
+        """Gets an attachment by it's sha256 hash.
+
+        Arguments:
+        sha256 -- the hash to search for
+        """
+
         async with self.postgres.acquire() as conn:
             async with conn.cursor() as curs:
                 await curs.execute('''
@@ -148,6 +197,12 @@ class StorageControl:
 
 
     async def add_attachment_tag(self, sha256, tag):
+        """Adds a tag to an attachment.
+
+        sha256 -- the hash of the attachment to tag
+        tag -- the string to tag it with
+        """
+
         sarlacc = self.mongo["sarlacc"]
         await sarlacc["samples"].update_one({"sha256": sha256},
                 {"$addToSet":
@@ -157,6 +212,11 @@ class StorageControl:
 
 
     async def get_email_attachments(self, email_id):
+        """Gets an email's attachments.
+
+        email_id -- the id of the mailitem to get attachments for
+        """
+
         async with self.postgres.acquire() as conn:
             async with conn.cursor() as curs:
                 await curs.execute('''
@@ -205,6 +265,20 @@ class StorageControl:
 
 
     async def store_email(self, subject, to_address_list, from_address, body, date_sent, attachments):
+        """A new email item.
+
+        Arguments:
+        subject -- the subject of the email
+        to_address_list -- a list of recipient email addresses
+        from_address -- the email address in the from header
+        body -- the email body
+        date_send -- the date and time the email was sent
+        attachments -- a list of attachment objects in the following format:
+            {
+                content: the content of the attachment (raw file),
+                filename: the name of the attachment filename
+            }
+        """
         logger.debug("-" * 80)
         logger.debug("Subject: {}".format(subject))
         logger.debug("to_address_list: {}".format(to_address_list))
