@@ -372,7 +372,7 @@ class StorageControl:
         logger.debug("-" * 80)
 
         async with self.postgres.acquire() as conn:
-            bodySHA256 = self.__get_sha256(body.encode("utf-8"))
+            body_sha256 = self.__get_sha256(body.encode("utf-8"))
             async with conn.cursor() as curs:
                 logger.debug("curs: {}".format(curs))
                 # insert if not existing already, otherwise return existing record
@@ -393,7 +393,7 @@ class StorageControl:
                         SELECT id, sha256, content
                         FROM s;
                         ''',
-                        (bodySHA256, bodySHA256, body,))
+                        (body_sha256, body_sha256, body,))
                 bodyRecord = await curs.fetchone()
                 bodyId = bodyRecord[0]
                 logger.debug("Body ID: {}".format(bodyId))
@@ -441,11 +441,11 @@ class StorageControl:
 
                 if attachments != None:
                     for attachment in attachments:
-                        attachmentSHA256 = self.__get_sha256(attachment["content"])
-                        attachment["sha256"] = attachmentSHA256
+                        attachment_sha256 = self.__get_sha256(attachment["content"])
+                        attachment["sha256"] = attachment_sha256
                         attachment["tags"] = []
                         await curs.execute("INSERT INTO attachment (sha256, mailid, filename) values (%s, %s, %s) returning *;",
-                                (attachmentSHA256, mailitem[0], attachment["filename"],))
+                                (attachment_sha256, mailitem[0], attachment["filename"],))
 
                         attachment_record = await curs.fetchone()
                         attachment["id"] = attachment_record[0]
@@ -454,13 +454,13 @@ class StorageControl:
                         sarlacc = self.mongo['sarlacc']
 
                         logger.info("Checking if attachment already in db")
-                        existing = await sarlacc["samples"].find_one({"sha256": attachmentSHA256})
+                        existing = await sarlacc["samples"].find_one({"sha256": attachment_sha256})
                         if existing:
                             attachment["tags"] = existing["tags"]
                         else:
                             logger.info("Storing attachment in mongodb")
                             await sarlacc["samples"].insert_one({
-                                "sha256": attachmentSHA256,
+                                "sha256": attachment_sha256,
                                 "content": attachment["content"],
                                 "filename": attachment["filename"],
                                 "tags": []})
@@ -469,7 +469,7 @@ class StorageControl:
                             # inform plugins of new attachment
                             await self.plugin_manager.emit_new_attachment(
                                     _id=attachment_record[0],
-                                    sha256=attachmentSHA256,
+                                    sha256=attachment_sha256,
                                     content=attachment["content"],
                                     filename=attachment["filename"],
                                     tags=[])
