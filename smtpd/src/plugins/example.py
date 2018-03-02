@@ -18,4 +18,3 @@ class Plugin(SarlaccPlugin):
 
         mailitem = await self.store.get_email_by_id(_id)
         self.logger.info(attachments)
-        await self.store.add_attachment_tag(attachments[0]["sha256"], "testing")

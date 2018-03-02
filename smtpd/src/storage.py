@@ -99,9 +99,52 @@ class StorageControl:
                 time.sleep(5)
 
 
-    # TODO Add attachment (refactor store_email)
-    # TODO Get attachment by id
-    # TODO Get attachment by sha256
+    async def get_attachment_by_selector(self, selector):
+        sarlacc = self.mongo["sarlacc"]
+        return await sarlacc["samples"].find_one(selector)
+
+
+    async def get_attachment_by_id(self, _id):
+        async with self.postgres.acquire() as conn:
+            async with conn.cursor() as curs:
+                await curs.execute('''
+                        SELECT * FROM attachment
+                        WHERE id=%s;
+                        ''',
+                        (_id,))
+                attachment_record = await curs.fetchone()
+
+                logger.info("------")
+                attachment = await self.get_attachment_by_selector({"sha256": attachment_record[2]})
+                logger.info(attachment)
+                logger.info("------")
+
+                return {
+                    "_id": attachment_record[0],
+                    "content": attachment["content"],
+                    "filename": attachment["filename"],
+                    "tags": attachment["tags"],
+                    "sha256": attachment["sha256"]}
+
+
+    async def get_attachment_by_sha256(self, sha256):
+        async with self.postgres.acquire() as conn:
+            async with conn.cursor() as curs:
+                await curs.execute('''
+                        SELECT * FROM attachment
+                        WHERE sha256=%s;
+                        ''',
+                        (sha256,))
+                attachment_record = await curs.fetchone()
+
+                attachment = await self.get_attachment_by_selector({"sha256": attachment_record[2]})
+
+                return {
+                    "_id": attachment_record[0],
+                    "content": attachment["content"],
+                    "filename": attachment["filename"],
+                    "tags": attachment["tags"],
+                    "sha256": attachment["sha256"]}
 
 
     async def add_attachment_tag(self, sha256, tag):
@@ -247,7 +290,8 @@ class StorageControl:
                         await curs.execute("INSERT INTO attachment (sha256, mailid, filename) values (%s, %s, %s) returning *;",
                                 (attachmentSHA256, mailitem[0], attachment["filename"],))
 
-                        attachmentRecord = await curs.fetchone()
+                        attachment_record = await curs.fetchone()
+                        attachment["id"] = attachment_record[0]
 
                         # check if attachment has been seen, if not store it in mongodb
                         sarlacc = self.mongo['sarlacc']
@@ -267,7 +311,7 @@ class StorageControl:
 
                             # inform plugins of new attachment
                             await self.plugin_manager.emit_new_attachment(
-                                    _id=attachmentRecord[0],
+                                    _id=attachment_record[0],
                                     sha256=attachmentSHA256,
                                     content=attachment["content"],
                                     filename=attachment["filename"],
