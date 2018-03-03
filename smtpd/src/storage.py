@@ -190,10 +190,7 @@ class StorageControl:
                         (_id,))
                 attachment_record = await curs.fetchone()
 
-                logger.info("------")
                 attachment = await self.get_attachment_by_selector({"sha256": attachment_record[2]})
-                logger.info(attachment)
-                logger.info("------")
 
                 return {
                     "_id": attachment_record[0],
@@ -454,18 +451,17 @@ class StorageControl:
                         sarlacc = self.mongo['sarlacc']
 
                         logger.info("Checking if attachment already in db")
-                        existing = await sarlacc["samples"].find_one({"sha256": attachment_sha256})
-                        if existing:
-                            attachment["tags"] = existing["tags"]
-                        else:
-                            logger.info("Storing attachment in mongodb")
-                            await sarlacc["samples"].insert_one({
-                                "sha256": attachment_sha256,
-                                "content": attachment["content"],
-                                "filename": attachment["filename"],
-                                "tags": []})
-                            logger.info("Stored file")
+                        write_result = await sarlacc["samples"].update(
+                                {"sha256": attachment_sha256},
+                                {
+                                    "sha256": attachment_sha256,
+                                    "content": attachment["content"],
+                                    "filename": attachment["filename"],
+                                    "tags": []
+                                },
+                                True)
 
+                        if not write_result["updatedExisting"]:
                             # inform plugins of new attachment
                             await self.plugin_manager.emit_new_attachment(
                                     _id=attachment_record[0],
