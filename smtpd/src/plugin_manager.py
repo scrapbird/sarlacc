@@ -23,8 +23,9 @@ class PluginManager():
     def load_plugins(self, store, directory):
         """Load plugins from plugin directory.
 
-        store -- sarlacc store object (provides interface to backend storage).
-        directory -- path to the directory to load plugins from.
+        Args:
+            store -- sarlacc store object (provides interface to backend storage).
+            directory -- path to the directory to load plugins from.
         """
 
         for name in os.listdir(os.path.dirname(os.path.abspath(__file__)) + "/" + directory):
@@ -43,8 +44,9 @@ class PluginManager():
     def __import_module(self, module_name, store):
         """Import a module
 
-        module_name -- the name of the module to load
-        store -- sarlacc store object (provides interface to backend storage)
+        Args:
+            module_name -- the name of the module to load
+            store -- sarlacc store object (provides interface to backend storage)
         """
 
         try:
