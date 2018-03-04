@@ -70,7 +70,7 @@ The web client has not been built yet, to view the data you will need to manuall
 
 ## Plugins
 
-You can extend sarlacc via plugins. Simply drop a python file into `smtpd/src/plugins`. There is an example plugin at `smtpd/src/plugins/example.py`.
+You can extend sarlacc via plugins. Simply drop a python file (or a directory with an __init__.py file) into `smtpd/src/plugins`. There are example's of both types of plugins at `smtpd/src/plugins/example.py` and `smtpd/src/plugins/directory_example`.
 
 To get a full idea of what events are available for the plugins to be notified by, check out the `smtpd/src/plugins/plugin.py` file.
 
