@@ -28,7 +28,7 @@ class PluginManager():
             directory -- path to the directory to load plugins from.
         """
 
-        for name in os.listdir(os.path.dirname(os.path.abspath(__file__)) + "/" + directory):
+        for name in os.listdir(os.path.join(os.path.dirname(os.path.abspath(__file__)), directory)):
             full_path = os.path.join("plugins", name)
             if name.startswith("__"):
                 logger.info("continuing")
