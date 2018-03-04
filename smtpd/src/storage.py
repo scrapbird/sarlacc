@@ -360,12 +360,12 @@ class StorageControl:
         """
 
         logger.debug("-" * 80)
-        logger.debug("Subject: {}".format(subject))
-        logger.debug("to_address_list: {}".format(to_address_list))
-        logger.debug("from_address: {}".format(from_address))
-        logger.debug("body: {}".format(body))
-        logger.debug("attachments: {}".format(attachments))
-        logger.debug("date_sent: {}".format(date_sent))
+        logger.debug("Subject: %s", subject)
+        logger.debug("to_address_list: %s", to_address_list)
+        logger.debug("from_address: %s", from_address)
+        logger.debug("body: %s", body)
+        logger.debug("attachment count: %s", len(attachments))
+        logger.debug("date_sent: %s", date_sent)
         logger.debug("-" * 80)
 
         async with self.postgres.acquire() as conn:
