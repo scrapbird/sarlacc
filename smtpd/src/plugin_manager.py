@@ -28,15 +28,33 @@ class PluginManager():
         """
 
         for name in os.listdir(os.path.dirname(os.path.abspath(__file__)) + "/" + directory):
-            if name.endswith(".py") and not name == "plugin.py":
+            full_path = os.path.join("plugins", name)
+            if name.startswith("__"):
+                logger.info("continuing")
+                continue
+            elif name.endswith(".py") and not name == "plugin.py":
                 module_name = name[:-3]
-                try:
-                    module = import_module("plugins." + module_name)
-                    self.plugins.append(module.Plugin(logger, store))
-                    logger.info("Loaded plugins/{}".format(name))
-                except Exception as e:
-                    logger.error("Failed to load plugin/{}".format(name))
-                    logger.error(traceback.format_exc())
+                self.__import_module(module_name, store)
+            elif os.path.isdir(full_path) and os.path.exists(os.path.join(full_path, "__init__.py")):
+                # This module is in it's own directory
+                self.__import_module(name, store)
+
+
+    def __import_module(self, module_name, store):
+        """Import a module
+
+        module_name -- the name of the module to load
+        store -- sarlacc store object (provides interface to backend storage)
+        """
+
+        try:
+            logger.info("Loading: %s", module_name)
+            module = import_module("plugins." + module_name)
+            self.plugins.append(module.Plugin(logger, store))
+            logger.info("Loaded plugins/{}".format(module_name))
+        except Exception as e:
+            logger.error("Failed to load plugin/{}".format(module_name))
+            logger.error(traceback.format_exc())
 
 
     def run_plugins(self):
