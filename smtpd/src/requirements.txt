@@ -1,4 +1,5 @@
 asyncio
+pytest-asyncio
 aiosmtpd
 pymongo
 motor

@@ -3,3 +3,4 @@ smtpd/src/smtpd.cfg
 *.pyc
 .idea/
 .vscode
+smtpd/src/.pytest_cache/
