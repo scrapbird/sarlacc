@@ -251,11 +251,13 @@ class StorageControl:
                     {"tags": tag}})
 
 
-    async def get_email_attachments(self, email_id):
+    async def get_email_attachments(self, email_id, content=True):
         """Gets an email's attachments.
 
         Args:
             email_id -- the id of the mailitem to get attachments for.
+            content (boolean) -- set this to False to omit the attachment's actual file content.
+                Defaults to True.
 
         Returns:
             A list of email attachment objects in the following format:
@@ -282,18 +284,55 @@ class StorageControl:
                     # Fetch the content
                     sarlacc = self.mongo["sarlacc"]
                     logger.info("Fetching attachment with sha256: %s", record[2])
-                    attachment_info = await sarlacc["samples"].find_one({"sha256": record[2]})
-                    attachments.append({
-                        "_id": record[0],
-                        "sha256": record[2],
-                        "filename": record[3],
-                        "content": attachment_info["content"],
-                        "tags": attachment_info["tags"]})
+
+                    if content:
+                        attachment_info = await sarlacc["samples"].find_one({"sha256": record[2]})
+                        attachments.append({
+                            "_id": record[0],
+                            "sha256": record[2],
+                            "filename": record[3],
+                            "content": attachment_info["content"],
+                            "tags": attachment_info["tags"]})
+                    else:
+                        attachment_info = await sarlacc["samples"].find_one({"sha256": record[2]},
+                                {"tags": True})
+                        attachments.append({
+                            "_id": record[0],
+                            "sha256": record[2],
+                            "filename": record[3],
+                            "tags": attachment_info["tags"]})
 
                 return attachments
 
 
-    async def get_email_by_selector(self, selector):
+    async def get_email_recipients(self, email_id):
+        """Gets an email's recipients.
+
+        Args:
+            email_id -- the id of the mailitem to get recipients for.
+
+        Returns:
+            A list of email recipients
+                ["user@example.com", ...]
+        """
+        async with self.postgres.acquire() as conn:
+            async with conn.cursor() as curs:
+                await curs.execute('''
+                        SELECT * FROM mailrecipient
+                        LEFT JOIN recipient on recipient.id = mailrecipient.recipientid
+                        WHERE mailrecipient.mailid=%s
+                        ''',
+                        (email_id,))
+                recipient_records = await curs.fetchall()
+
+                recipients = []
+                for record in recipient_records:
+                    recipients.append(record[4])
+
+                return recipients
+
+
+    async def get_email_by_selector(self, selector, attachment_content=True):
         """Get email by sql query.
 
         Gets a mail item using a selector object.
@@ -308,6 +347,8 @@ class StorageControl:
                 }
                 Where "column_name" is the name of the column and value is the value you search
                 for in the `where` clause of the sql query.
+            attachment_content (boolean): set to false to not return actual file content for attachments.
+                This is useful if the file is very large. Defaults to True.
 
         Returns:
             An email object in the following format:
@@ -321,10 +362,10 @@ class StorageControl:
                     body_sha256: the sha256 hash of the body,
                     body_content: the content of the body,
                     attachments: a list of email attachment objects in the following format:
+                    Note: to get attachment content see the get_email_attachments method.
                         [{
                             tags[]: a list of tag strings attached to this attachment,
                             sha256: the sha256 hash of this attachment,
-                            content: the raw file,
                             filename: the filename,
                             _id: the id of the attachment's postgresql record
                         }]
@@ -335,8 +376,6 @@ class StorageControl:
             address "from@example.com", simply use the following:
                 {"subject": "test", "from_address": "from@example.com"}
         """
-
-        # TODO (probably tomorrow): actually return the recipients in the response
 
         # A list of selector keys matched with the full column name they represent and their value
         # (defaults to None)
@@ -384,6 +423,7 @@ class StorageControl:
                         "date_sent": email[1],
                         "subject": email[2],
                         "from_address": email[3],
+                        "recipients": await self.get_email_recipients(email[0]),
                         "body_id": email[4],
                         "body_sha256": email[6],
                         "body_content": email[7],
@@ -435,6 +475,7 @@ class StorageControl:
                         "date_sent": email[1],
                         "subject": email[2],
                         "from_address": email[3],
+                        "recipients": await self.get_email_recipients(email[0]),
                         "body_id": email[4],
                         "body_sha256": email[6],
                         "body_content": email[7],

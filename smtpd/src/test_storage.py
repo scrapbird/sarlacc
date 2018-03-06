@@ -42,6 +42,8 @@ async def test_create_Storage(event_loop, config, plugin_manager):
 
 @pytest.mark.asyncio
 async def test_store_email(store):
+    """This also doubles as a test for get_email_by_selector
+    """
     now = datetime.datetime.now()
     await store.store_email(
             "test subject",
@@ -55,6 +57,9 @@ async def test_store_email(store):
     email = await store.get_email_by_selector({"date_sent": now})
 
     assert email["subject"] == "test subject"
-    # assert email["recipients"]
+    assert "test_recipient_1@example.com" == email["recipients"][0]
+    assert len(email["recipients"]) == 1
     assert email["date_sent"] == now
+    assert email["attachments"][0]["content"] == b"Test content"
+    assert email["attachments"][0]["filename"] == "testfile.txt"
 
