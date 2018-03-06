@@ -98,7 +98,7 @@ class StorageControl:
             pass
 
 
-    def __get_sha256(self, data):
+    async def __get_sha256(self, data):
         """Calculate sha256 hash of data.
 
         Args:
@@ -245,16 +245,19 @@ class StorageControl:
         """
 
         sarlacc = self.mongo["sarlacc"]
-        await sarlacc["samples"].update_one({"sha256": sha256},
+        await sarlacc["samples"].update_one(
+                {"sha256": sha256},
                 {"$addToSet":
                     {"tags": tag}})
 
 
-    async def get_email_attachments(self, email_id):
+    async def get_email_attachments(self, email_id, content=True):
         """Gets an email's attachments.
 
         Args:
             email_id -- the id of the mailitem to get attachments for.
+            content (boolean) -- set this to False to omit the attachment's actual file content.
+                Defaults to True.
 
         Returns:
             A list of email attachment objects in the following format:
@@ -281,15 +284,152 @@ class StorageControl:
                     # Fetch the content
                     sarlacc = self.mongo["sarlacc"]
                     logger.info("Fetching attachment with sha256: %s", record[2])
-                    attachment_info = await sarlacc["samples"].find_one({"sha256": record[2]})
-                    attachments.append({
-                        "_id": record[0],
-                        "sha256": record[2],
-                        "filename": record[3],
-                        "content": attachment_info["content"],
-                        "tags": attachment_info["tags"]})
+
+                    if content:
+                        attachment_info = await sarlacc["samples"].find_one({"sha256": record[2]})
+                        attachments.append({
+                            "_id": record[0],
+                            "sha256": record[2],
+                            "filename": record[3],
+                            "content": attachment_info["content"],
+                            "tags": attachment_info["tags"]})
+                    else:
+                        attachment_info = await sarlacc["samples"].find_one({"sha256": record[2]},
+                                {"tags": True})
+                        attachments.append({
+                            "_id": record[0],
+                            "sha256": record[2],
+                            "filename": record[3],
+                            "tags": attachment_info["tags"]})
 
                 return attachments
+
+
+    async def get_email_recipients(self, email_id):
+        """Gets an email's recipients.
+
+        Args:
+            email_id -- the id of the mailitem to get recipients for.
+
+        Returns:
+            A list of email recipients
+                ["user@example.com", ...]
+        """
+        async with self.postgres.acquire() as conn:
+            async with conn.cursor() as curs:
+                await curs.execute('''
+                        SELECT * FROM mailrecipient
+                        LEFT JOIN recipient on recipient.id = mailrecipient.recipientid
+                        WHERE mailrecipient.mailid=%s
+                        ''',
+                        (email_id,))
+                recipient_records = await curs.fetchall()
+
+                recipients = []
+                for record in recipient_records:
+                    recipients.append(record[4])
+
+                return recipients
+
+
+    async def get_email_by_selector(self, selector, attachment_content=True):
+        """Get email by sql query.
+
+        Gets a mail item using a selector object.
+
+        Args:
+            selector -- a dict containing values to query for in the following format:
+                {
+                    "column_name_0": value,
+                    "column_name_1": value
+                    ...
+                    "column_name_n": value
+                }
+                Where "column_name" is the name of the column and value is the value you search
+                for in the `where` clause of the sql query.
+            attachment_content (boolean): set to false to not return actual file content for attachments.
+                This is useful if the file is very large. Defaults to True.
+
+        Returns:
+            An email object in the following format:
+                {
+                    _id: the id of the email record in postgres,
+                    date_send: the date and time the email was sent,
+                    subject: the email subject,
+                    from_address: the email address in the from header,
+                    recipients: the list of recipient email addresses
+                    body_id: the id of the body record in postgres,
+                    body_sha256: the sha256 hash of the body,
+                    body_content: the content of the body,
+                    attachments: a list of email attachment objects in the following format:
+                    Note: to get attachment content see the get_email_attachments method.
+                        [{
+                            tags[]: a list of tag strings attached to this attachment,
+                            sha256: the sha256 hash of this attachment,
+                            filename: the filename,
+                            _id: the id of the attachment's postgresql record
+                        }]
+                }
+
+        Example:
+            Lets say I wish to get an email that has the subject "test" and the sending email
+            address "from@example.com", simply use the following:
+                {"subject": "test", "from_address": "from@example.com"}
+        """
+
+        # A list of selector keys matched with the full column name they represent and their value
+        # (defaults to None)
+        #
+        # This also doubles as a whitelist for column names allowed in the query to prevent sqli.
+        whitelist_columns = {
+                "_id": "mailitem.id",
+                "date_sent": "mailitem.datesent",
+                "subject": "mailitem.subject",
+                "from_address": "mailitem.fromaddress",
+                "body_id": "mailitem.bodyid",
+                "body_sha256": "body.sha256",
+                "body_content": "body.content"}
+
+        and_operator = False
+        query_string = """SELECT * FROM mailitem
+                LEFT JOIN body ON body.id = mailitem.bodyid """
+
+        values = ()
+
+        # Loop over values and add them to the query if they're whitelisted
+        for key, value in selector.items():
+            if key in whitelist_columns:
+                if not and_operator:
+                    and_operator = True
+                    query_string += "WHERE "
+                else:
+                    query_string += "AND "
+                query_string += whitelist_columns[key] + "=%s "
+                values = values + (value,)
+            else:
+                logger.warning("Detected selector key not specified in the whitelist. Key: %s", key)
+
+        query_string += ";"
+
+        async with self.postgres.acquire() as conn:
+            async with conn.cursor() as curs:
+
+                await curs.execute(query_string,
+                        values)
+                email = await curs.fetchone()
+
+                return {
+                        "_id": email[0],
+                        "date_sent": email[1],
+                        "subject": email[2],
+                        "from_address": email[3],
+                        "recipients": await self.get_email_recipients(email[0]),
+                        "body_id": email[4],
+                        "body_sha256": email[6],
+                        "body_content": email[7],
+                        "attachments": await self.get_email_attachments(email[0])
+                        }
+
 
 
     async def get_email_by_id(self, email_id):
@@ -335,6 +475,7 @@ class StorageControl:
                         "date_sent": email[1],
                         "subject": email[2],
                         "from_address": email[3],
+                        "recipients": await self.get_email_recipients(email[0]),
                         "body_id": email[4],
                         "body_sha256": email[6],
                         "body_content": email[7],
@@ -369,7 +510,7 @@ class StorageControl:
         logger.debug("-" * 80)
 
         async with self.postgres.acquire() as conn:
-            body_sha256 = self.__get_sha256(body.encode("utf-8"))
+            body_sha256 = await self.__get_sha256(body.encode("utf-8"))
             async with conn.cursor() as curs:
                 logger.debug("curs: {}".format(curs))
                 # insert if not existing already, otherwise return existing record
@@ -438,7 +579,7 @@ class StorageControl:
 
                 if attachments != None:
                     for attachment in attachments:
-                        attachment_sha256 = self.__get_sha256(attachment["content"])
+                        attachment_sha256 = await self.__get_sha256(attachment["content"])
                         attachment["sha256"] = attachment_sha256
                         attachment["tags"] = []
                         await curs.execute("INSERT INTO attachment (sha256, mailid, filename) values (%s, %s, %s) returning *;",
