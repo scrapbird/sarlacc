@@ -124,11 +124,7 @@ class MailHandler:
                             a = matches[0].index('"')
                             b = matches[0].index('"', a + 1)
                             filename = matches[0][a + 1:b]
-                            content = part.get_payload()
-
-                            # Check if attachment is base64 encoded
-                            if "Content-Transfer-Encoding" in part and "base64" in part["Content-Transfer-Encoding"]:
-                                content = b64decode(content.strip())
+                            content = part.get_payload(decode=True)
 
                             attachments.append({
                                 "content": content,
@@ -146,11 +142,7 @@ class MailHandler:
                         a = matches[0].index('"')
                         b = matches[0].index('"', a + 1)
                         filename = matches[0][a + 1:b]
-                        content = message.get_payload()
-
-                        # Check if attachment is base64 encoded
-                        if "Content-Transfer-Encoding" in part and "base64" in part["Content-Transfer-Encoding"]:
-                            content = b64decode(content.strip())
+                        content = message.get_payload(decode=True)
 
                         attachments.append({
                             "content": content,
