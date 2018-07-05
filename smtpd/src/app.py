@@ -22,8 +22,8 @@ def main():
 
     # Configure the logger
     logging.basicConfig(level=getattr(logging, config["logging"]["log_level"].upper()),
-            format='%(levelname)s: %(asctime)s %(message)s',
-            datefmt='%m/%d/%Y %I:%M:%S %p')
+            format="%(levelname)s: %(asctime)s %(message)s",
+            datefmt="%m/%d/%Y %I:%M:%S %p")
 
     loop = asyncio.get_event_loop()
 
