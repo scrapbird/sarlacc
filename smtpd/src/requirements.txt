@@ -3,6 +3,6 @@ pytest-asyncio
 aiosmtpd
 pymongo
 motor
-psycopg2
+psycopg2-binary
 ConfigParser
 aiopg
