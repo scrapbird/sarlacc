@@ -23,12 +23,12 @@ services:
   smtpd:
     build: ./smtpd
     ports:
-      - "2500:2500"
+      - "127.0.0.1:2500:2500"
 
   web:
     build: ./web
     ports:
-      - "5000:5000"
+      - "127.0.0.1:5000:5000"
 
 volumes:
   mongodb:
