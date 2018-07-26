@@ -1,0 +1,5 @@
+quart
+asyncio
+motor
+psycopg2
+aiopg
