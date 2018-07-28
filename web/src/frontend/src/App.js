@@ -85,7 +85,7 @@ class App extends Component {
 			onRequestSearch={(s) => this.onRequestSearch(s)}
 			/>
 
-			<hr style={{color: "transparent", padding: 0, margin: 0}}/>
+			<div style={{padding: 0, margin: 0, marginTop: 1 }}/>
 
 			<ResultTable results={this.state.results}/>
 
