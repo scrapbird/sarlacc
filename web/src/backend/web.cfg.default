@@ -1,0 +1,17 @@
+[web]
+host = 0.0.0.0
+port = 5000
+
+[mongodb]
+host = mongodb
+port = 27017
+
+[postgres]
+host = postgres
+database = sarlacc
+user = user
+password = user
+
+[logging]
+log_level = INFO
+

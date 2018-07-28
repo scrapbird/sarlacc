@@ -13,12 +13,12 @@ RUN apk add vim
 RUN apk add git
 
 # Install nodejs
-RUN apk add --update nodejs
+RUN apk add --update nodejs nodejs-npm
 
 # Add user
-RUN adduser -S scrappy
+RUN addgroup -S scrappy && adduser -S -G scrappy scrappy
 WORKDIR /home/scrappy
-RUN chown -R scrappy /home/scrappy/
+RUN chown -R 100:101 /home/scrappy/
 USER scrappy
 
 CMD ["/bin/sh"]

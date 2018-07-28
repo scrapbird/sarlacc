@@ -12,22 +12,32 @@ RUN apk add --no-cache python3  && \
 # Install nodejs
 RUN apk add --update nodejs nodejs-npm nodejs-npm
 
-# Configure and build web frontend
-ADD ./src /sarlacc
-WORKDIR /sarlacc/frontend
-# RUN npm run build
-# RUN ln -s /sarlacc/backend/static /sarlac/frontend/build
-
 # Install psycopg2 deps
 RUN apk add postgresql-dev gcc python3-dev musl-dev
+
+# Create root dir
+RUN mkdir /sarlacc
+
+# Add backend dir
+ADD ./src/backend /sarlacc/backend
 
 # Install backend deps
 WORKDIR /sarlacc/backend
 RUN pip3 install -r requirements.txt
 
+# Add frontend dir
+ADD ./src/frontend /sarlacc/frontend
+
+# Configure and build web frontend
+WORKDIR /sarlacc/frontend
+RUN npm run build
+RUN ln -s /sarlacc/frontend/build /sarlacc/backend/static
+RUN ls -lah /sarlacc/backend
+RUN ls -lahR /sarlacc/backend/static/
+
 # Add user
 RUN adduser -S sarlacc
-RUN chown -R sarlacc /home/sarlacc/
 USER sarlacc
 
+WORKDIR /sarlacc/backend
 CMD ["python", "app.py"]
