@@ -32,8 +32,6 @@ ADD ./src/frontend /sarlacc/frontend
 WORKDIR /sarlacc/frontend
 RUN npm run build
 RUN ln -s /sarlacc/frontend/build /sarlacc/backend/static
-RUN ls -lah /sarlacc/backend
-RUN ls -lahR /sarlacc/backend/static/
 
 # Add user
 RUN adduser -S sarlacc

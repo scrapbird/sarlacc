@@ -427,7 +427,7 @@ class StorageControl:
                         "body_id": email[4],
                         "body_sha256": email[6],
                         "body_content": email[7],
-                        "attachments": await self.get_email_attachments(email[0])
+                        "attachments": await self.get_email_attachments(email[0], content=attachment_content)
                         }
 
 

@@ -12,6 +12,16 @@ RUN apk add --no-cache python3 && \
 RUN apk add vim
 RUN apk add git
 
+# Install psycopg2 deps
+RUN apk add postgresql-dev gcc python3-dev musl-dev
+
+# Add backend dir
+ADD ./src/backend /sarlacc/backend
+
+# Install backend deps
+WORKDIR /sarlacc/backend
+RUN pip3 install -r requirements.txt
+
 # Install nodejs
 RUN apk add --update nodejs nodejs-npm
 

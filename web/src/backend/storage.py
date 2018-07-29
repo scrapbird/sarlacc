@@ -9,7 +9,7 @@ import logging
 logger = logging.getLogger()
 
 
-async def create_storage(config, plugin_manager, loop):
+async def create_storage(config, loop):
     """Creates and initializes a storage object.
 
     Args:
@@ -20,23 +20,21 @@ async def create_storage(config, plugin_manager, loop):
         The storage object.
     """
 
-    storage = StorageControl(config, plugin_manager, loop)
+    storage = StorageControl(config, loop)
     await storage._init()
     return storage
 
 
 class StorageControl:
-    def __init__(self, config, plugin_manager, loop):
+    def __init__(self, config, loop):
         """Init method for StorageControl class.
 
         Args:
             config -- sarlacc config object
-            plugin_manager -- sarlacc plugin_manager object
             loop -- asyncio loop
         """
 
         self.config = config
-        self.plugin_manager = plugin_manager
         self.loop = loop
 
         self.mongo = AsyncIOMotorClient("mongodb://{}:{}".format(
@@ -332,6 +330,79 @@ class StorageControl:
                 return recipients
 
 
+    async def search_emails(self, query, attachment_content=True):
+        """Get email by sql query.
+
+        Gets a mail item using a selector object.
+
+        Args:
+            query -- a string to search for in any of the mail item fields
+            attachment_content (boolean): set to false to not return actual file content for attachments.
+                This is useful if the file is very large. Defaults to True.
+
+        Returns:
+            An array of email object in the following format:
+                [{
+                    _id: the id of the email record in postgres,
+                    date_send: the date and time the email was sent,
+                    subject: the email subject,
+                    from_address: the email address in the from header,
+                    recipients: the list of recipient email addresses
+                    body_id: the id of the body record in postgres,
+                    body_sha256: the sha256 hash of the body,
+                    body_content: the content of the body,
+                    attachments: a list of email attachment objects in the following format:
+                    Note: to get attachment content see the get_email_attachments method.
+                        [{
+                            tags[]: a list of tag strings attached to this attachment,
+                            sha256: the sha256 hash of this attachment,
+                            filename: the filename,
+                            _id: the id of the attachment's postgresql record
+                        }]
+                }]
+
+        Example:
+            Lets say I wish to get an email that has the subject "test" and the sending email
+            address "from@example.com", simply use the following:
+                {"subject": "test", "from_address": "from@example.com"}
+        """
+
+        query_string = """SELECT * FROM mailitem
+                LEFT JOIN body ON body.id = mailitem.bodyid 
+                WHERE _id=%s
+                OR date_sent=%s
+                OR subject=%s
+                OR from_address=%s
+                OR body_sha256=%s
+                OR body_content=%s;"""
+
+        async with self.postgres.acquire() as conn:
+            async with conn.cursor() as curs:
+
+                await curs.execute(query_string, 
+                        (query, query, query, query, query, query,))
+                res = await curs.fetchall()
+
+                emails = map(lambda email: {
+                        "_id": email[0],
+                        "date_sent": email[1],
+                        "subject": email[2],
+                        "from_address": email[3],
+                        "recipients": None, #await self.get_email_recipients(email[0]),
+                        "body_id": email[4],
+                        "body_sha256": email[6],
+                        "body_content": email[7],
+                        "attachments": None #await self.get_email_attachments(email[0], content=attachment_content)
+                        }, res)
+
+                for email in emails:
+                    email.recipients = await self.get_email_recipients(email[0])
+                    email.attachments = await self.get_email_attachments(email[0], content=attachment_content)
+
+                return emails
+
+
+
     async def get_email_by_selector(self, selector, attachment_content=True):
         """Get email by sql query.
 
@@ -427,9 +498,8 @@ class StorageControl:
                         "body_id": email[4],
                         "body_sha256": email[6],
                         "body_content": email[7],
-                        "attachments": await self.get_email_attachments(email[0])
+                        "attachments": await self.get_email_attachments(email[0], content=attachment_content)
                         }
-
 
 
     async def get_email_by_id(self, email_id):
@@ -481,136 +551,4 @@ class StorageControl:
                         "body_content": email[7],
                         "attachments": await self.get_email_attachments(email_id)
                         }
-
-
-
-    async def store_email(self, subject, to_address_list, from_address, body, date_sent, attachments):
-        """A new email item.
-
-        Args:
-            subject -- the subject of the email.
-            to_address_list -- a list of recipient email addresses.
-            from_address -- the email address in the from header.
-            body -- the email body.
-            date_send -- the date and time the email was sent.
-            attachments -- a list of attachment objects in the following format:
-                {
-                    content: the content of the attachment (raw file),
-                    filename: the name of the attachment filename
-                }
-        """
-
-        logger.debug("-" * 80)
-        logger.debug("Subject: %s", subject)
-        logger.debug("to_address_list: %s", to_address_list)
-        logger.debug("from_address: %s", from_address)
-        logger.debug("body: %s", body)
-        logger.debug("attachment count: %s", len(attachments))
-        logger.debug("date_sent: %s", date_sent)
-        logger.debug("-" * 80)
-
-        async with self.postgres.acquire() as conn:
-            body_sha256 = await self.__get_sha256(body.encode("utf-8"))
-            async with conn.cursor() as curs:
-                logger.debug("curs: {}".format(curs))
-                # insert if not existing already, otherwise return existing record
-                await curs.execute('''
-                        WITH s AS (
-                            SELECT id, sha256, content
-                            FROM body
-                            WHERE sha256 = %s
-                        ), i as (
-                            INSERT INTO body (sha256, content)
-                            SELECT %s, %s
-                            WHERE NOT EXISTS (SELECT 1 FROM s)
-                            RETURNING id, sha256, content
-                        )
-                        SELECT id, sha256, content
-                        FROM i
-                        UNION ALL
-                        SELECT id, sha256, content
-                        FROM s;
-                        ''',
-                        (body_sha256, body_sha256, body,))
-                bodyRecord = await curs.fetchone()
-                bodyId = bodyRecord[0]
-                logger.debug("Body ID: {}".format(bodyId))
-
-                # add a mailitem
-                await curs.execute("INSERT INTO mailitem (datesent, subject, fromaddress, bodyid) values (%s, %s, %s, %s) returning *;",
-                        (date_sent, subject, from_address, bodyId,))
-                mailitem = await curs.fetchone()
-
-                # add recipients
-                recipientList = []
-                for recipient in to_address_list:
-                    # insert if not existing already, otherwise return existing record
-                    await curs.execute('''
-                            WITH s AS (
-                                SELECT id, emailaddress
-                                FROM recipient
-                                WHERE emailaddress = %s
-                            ), i as (
-                                INSERT INTO recipient (emailaddress)
-                                SELECT %s
-                                WHERE NOT EXISTS (SELECT 1 FROM s)
-                                RETURNING id, emailaddress
-                            )
-                            SELECT id, emailaddress
-                            FROM i
-                            UNION ALL
-                            SELECT id, emailaddress
-                            FROM s;
-                            ''',
-                            (recipient, recipient,))
-                    recipientRecord = await curs.fetchone()
-                    recipientList.append(recipientRecord)
-
-                    # link this recipient to the mailitem
-                    await curs.execute("INSERT INTO mailrecipient (recipientid, mailid) values (%s, %s);", (recipientRecord[0], mailitem[0]))
-
-                    # check if this is a new email address in the recipient list and if so, inform registered plugins
-                    if recipient is not recipientRecord[1]:
-                        # new email address
-                        await self.plugin_manager.emit_new_email_address(
-                                _id=recipientRecord[0],
-                                email_address=recipientRecord[1])
-
-
-                if attachments != None:
-                    for attachment in attachments:
-                        attachment_sha256 = await self.__get_sha256(attachment["content"])
-                        attachment["sha256"] = attachment_sha256
-                        attachment["tags"] = []
-                        await curs.execute("INSERT INTO attachment (sha256, mailid, filename) values (%s, %s, %s) returning *;",
-                                (attachment_sha256, mailitem[0], attachment["filename"],))
-
-                        attachment_record = await curs.fetchone()
-                        attachment["id"] = attachment_record[0]
-
-                        # check if attachment has been seen, if not store it in mongodb
-                        sarlacc = self.mongo['sarlacc']
-
-                        logger.info("Checking if attachment already in db")
-                        write_result = await sarlacc["samples"].update(
-                                {"sha256": attachment_sha256},
-                                {
-                                    "sha256": attachment_sha256,
-                                    "content": attachment["content"],
-                                    "filename": attachment["filename"],
-                                    "tags": []
-                                },
-                                True)
-
-                        if not write_result["updatedExisting"]:
-                            # inform plugins of new attachment
-                            await self.plugin_manager.emit_new_attachment(
-                                    _id=attachment_record[0],
-                                    sha256=attachment_sha256,
-                                    content=attachment["content"],
-                                    filename=attachment["filename"],
-                                    tags=[])
-
-                # inform plugins
-                await self.plugin_manager.emit_new_mail_item(mailitem[0], subject, to_address_list, from_address, body, date_sent, attachments)
 

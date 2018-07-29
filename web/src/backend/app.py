@@ -1,22 +1,14 @@
 import os
+import asyncio
 from quart import Quart
 from configparser import ConfigParser
-import storage
 import logging
+
+import storage
+from mails import blueprint as mails_blueprint
 
 
 logger = logging.getLogger()
-app = Quart(__name__, static_url_path="")
-
-
-# @app.route("/api/hello")
-# async def hello():
-#     return "Testing. Hello World! I have been seen {} times.\n"
-
-
-@app.route("/")
-async def index():
-    return await app.send_static_file("index.html")
 
 
 def main():
@@ -30,7 +22,21 @@ def main():
             format="%(levelname)s: %(asctime)s %(message)s",
             datefmt="%m/%d/%Y %I:%M:%S %p")
 
-    app.run(host=config["web"]["host"], port=config["web"]["port"], debug=True)
+    loop = asyncio.get_event_loop()
+
+    app = Quart(__name__, static_url_path="")
+    app.sarlacc_config = config
+
+
+    @app.before_first_request
+    async def init_store():
+        # Init storage handlers
+        app.store = await storage.create_storage(config, loop)
+
+
+    app.register_blueprint(mails_blueprint)
+
+    app.run(host=config["web"]["host"], port=config["web"]["port"], loop=loop, debug=True)
 
 
 if __name__ == "__main__":

@@ -33,11 +33,12 @@ class App extends Component {
 
 	search(s) {
 		this.setState({
-			results: data.filter((i) => i.subject.includes(s)
+			results: data.filter((i) => i.subject.toLowerCase().includes(s.toLowerCase())
 				|| i.id === s
-				|| i.from_address.includes(s)
-				|| i.recipients.includes(s)
-				|| i.date_sent.includes(s))})
+				|| i.from_address.toLowerCase().includes(s.toLowerCase())
+				|| i.recipients.toLowerCase().includes(s.toLowerCase())
+				|| i.date_sent.toLowerCase().includes(s.toLowerCase()))
+		})
 	}
 
 	runScheduledSearch() {
