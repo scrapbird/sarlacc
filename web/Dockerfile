@@ -30,6 +30,7 @@ ADD ./src/frontend /sarlacc/frontend
 
 # Configure and build web frontend
 WORKDIR /sarlacc/frontend
+RUN npm install
 RUN npm run build
 RUN ln -s /sarlacc/frontend/build /sarlacc/backend/static
 
